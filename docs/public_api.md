@@ -53,6 +53,10 @@ JSON objects use unit-bearing field names where practical. Object key order is
 not semantic. Lists whose documentation declares deterministic ordering retain
 that ordering throughout 1.x.
 
+Vehicle and sensor parameter provenance uses the shared
+`ParameterProvenance` vocabulary: `assumed`, `published`, `measured`, or
+`fitted`. Non-assumed configurations require traceable HTTPS sources.
+
 ## Errors and side effects
 
 Invalid caller configuration raises `ValueError` or a documented subclass.

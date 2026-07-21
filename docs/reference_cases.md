@@ -12,6 +12,12 @@ stiffness, and response time constants. They are internally consistent inputs
 to documented equations, but they have not been fitted to tow-tank, CFD, pool,
 or sea-trial data.
 
+This boundary is machine-readable as
+`MarineVehicleConfig.parameter_provenance`. A non-assumed custom configuration
+must also provide one or more HTTPS `parameter_source_urls`. Provenance applies
+to the configuration as a whole: a partly sourced model must remain `assumed`
+until every behavior-defining parameter supports the stronger claim.
+
 Custom rigid-body inertia diagonals must satisfy the physical triangle
 inequalities, and the declared center of buoyancy must lie inside the body
 bounding envelope. These are consistency checks, not vehicle validation.

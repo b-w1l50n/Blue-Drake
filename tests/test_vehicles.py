@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 
+from blue_drake.provenance import ParameterProvenance
 from blue_drake.vehicles import (
     HydrostaticMode,
     MarineVehicleConfig,
@@ -18,6 +19,10 @@ def test_public_presets_cover_exactly_requested_vehicle_categories() -> None:
     presets = (uuv_preset(), rov_preset(), glider_preset(), usv_preset())
     assert {preset.kind for preset in presets} == set(VehicleKind)
     assert all("auv" not in preset.name.lower() for preset in presets)
+    assert all(
+        preset.parameter_provenance is ParameterProvenance.ASSUMED
+        for preset in presets
+    )
 
 
 def test_surface_and_subsea_presets_use_distinct_hydrostatics() -> None:
@@ -70,3 +75,23 @@ def test_center_of_buoyancy_must_be_inside_body_envelope() -> None:
     values = vars(rov_preset()) | {"center_of_buoyancy_B_m": (0.0, 0.0, 1.0)}
     with pytest.raises(ValueError, match="within the body envelope"):
         MarineVehicleConfig(**values)
+
+
+def test_non_assumed_vehicle_parameters_require_https_source() -> None:
+    values = vars(rov_preset()) | {
+        "parameter_provenance": "measured",
+        "parameter_source_urls": (),
+    }
+    with pytest.raises(ValueError, match="require a source URL"):
+        MarineVehicleConfig(**values)
+    measured = MarineVehicleConfig(
+        **(
+            values
+            | {
+                "parameter_source_urls": (
+                    "https://example.edu/datasets/student-rov-v1",
+                )
+            }
+        )
+    )
+    assert measured.parameter_provenance is ParameterProvenance.MEASURED

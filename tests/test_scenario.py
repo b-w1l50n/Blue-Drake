@@ -247,7 +247,7 @@ position_W_m = [0, 0, -1]
 """,
         encoding="utf-8",
     )
-    with pytest.raises(ValueError, match="require a source_url"):
+    with pytest.raises(ValueError, match="require a source URL"):
         load_scenario(path)
 
 

@@ -11,6 +11,10 @@ import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
 from blue_drake.identifiers import validate_identifier
+from blue_drake.provenance import (
+    ParameterProvenance,
+    validate_parameter_provenance,
+)
 
 Vector = NDArray[np.float64]
 Vector3 = tuple[float, float, float]
@@ -26,15 +30,6 @@ class SensorKind(StrEnum):
     MULTIBEAM_ECHOSOUNDER = "multibeam_echosounder"
     FORWARD_LOOKING_SONAR = "forward_looking_sonar"
     CUSTOM_VECTOR = "custom_vector"
-
-
-class ParameterProvenance(StrEnum):
-    """Declared origin of user-configurable profile parameters."""
-
-    PUBLISHED = "published"
-    MEASURED = "measured"
-    FITTED = "fitted"
-    ASSUMED = "assumed"
 
 
 def _vector(name: str, value: ArrayLike, size: int) -> Vector:
@@ -60,14 +55,10 @@ def _profile_identity(
         raise ValueError("sensor profile display_name is required")
     if source_url is not None and not source_url.strip():
         raise ValueError("source_url cannot be empty when supplied")
-    try:
-        normalized = ParameterProvenance(provenance)
-    except ValueError as exc:
-        raise ValueError(
-            f"unsupported parameter provenance: {provenance}"
-        ) from exc
-    if normalized is not ParameterProvenance.ASSUMED and source_url is None:
-        raise ValueError(f"{normalized} sensor parameters require a source_url")
+    normalized, _ = validate_parameter_provenance(
+        provenance,
+        () if source_url is None else (source_url,),
+    )
     return normalized
 
 

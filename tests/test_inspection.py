@@ -23,6 +23,10 @@ def test_scenario_summary_is_json_ready_and_preserves_units() -> None:
         "usv",
         "uuv",
     }
+    assert all(
+        vehicle["parameter_provenance"] == "assumed"
+        for vehicle in summary["vehicles"]
+    )
     assert summary["network"]["transmission_count"] == 4
     surface = summary["vehicles"][0]
     assert surface["wrench_command_B"] == [0.0, 0.0, 0.0, 8.0, 0.0, 0.0]
@@ -45,6 +49,10 @@ def test_catalog_contains_all_current_builtin_families() -> None:
         "usv",
         "uuv",
     }
+    assert all(
+        item["parameter_provenance"] == "assumed"
+        for item in catalog["vehicles"]
+    )
     assert {item["profile_id"] for item in catalog["sensors"]} >= {
         "blue-robotics-bar30",
         "xsens-avior-ahrs",

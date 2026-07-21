@@ -20,6 +20,8 @@ and analytical benchmark output.
   library users do not depend on CLI internals.
 - Add a read-only `doctor` command and complete Ubuntu, WSL2, secure NUC, and
   first sensor-experiment instructions.
+- Add shared, machine-readable provenance and source URLs to vehicle
+  configurations, scenario inspection, and catalogs.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface

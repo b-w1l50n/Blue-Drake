@@ -43,6 +43,12 @@ def scenario_summary(scenario: MarineScenario) -> dict[str, Any]:
                 "id": vehicle.vehicle_id,
                 "kind": vehicle.config.kind.value,
                 "model_name": vehicle.config.name,
+                "parameter_provenance": (
+                    vehicle.config.parameter_provenance.value
+                ),
+                "parameter_source_urls": list(
+                    vehicle.config.parameter_source_urls
+                ),
                 "initial_position_W_m": list(vehicle.initial_position_W_m),
                 "initial_rpy_deg": list(vehicle.initial_rpy_deg),
                 "water_current_W_mps": list(vehicle.water_current_W_mps),
@@ -109,6 +115,8 @@ def catalog_summary() -> dict[str, Any]:
                 "name": config.name,
                 "kind": config.kind.value,
                 "dry_mass_kg": config.dry_mass_kg,
+                "parameter_provenance": config.parameter_provenance.value,
+                "parameter_source_urls": list(config.parameter_source_urls),
                 "dimensions_m": list(config.dimensions_m),
                 "actuator_count": (
                     0

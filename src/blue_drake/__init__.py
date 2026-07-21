@@ -9,10 +9,10 @@ from blue_drake.actuators import (
     allocate_wrench,
 )
 from blue_drake.planning import GridPath, MarineGrid, plan_grid_path
+from blue_drake.provenance import ParameterProvenance
 from blue_drake.sensors import (
     CustomVectorSensorProfile,
     MountedSensorConfig,
-    ParameterProvenance,
     SensorKind,
     sensor_profile,
 )

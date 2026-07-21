@@ -14,6 +14,10 @@ from blue_drake.actuators import (
     usv_actuator_preset,
     uuv_actuator_preset,
 )
+from blue_drake.provenance import (
+    ParameterProvenance,
+    validate_parameter_provenance,
+)
 
 Vector3 = tuple[float, float, float]
 
@@ -115,10 +119,18 @@ class MarineVehicleConfig:
     actuator_bank: ActuatorBankConfig | None = None
     glider_wing: GliderWingConfig | None = None
     glider_control: GliderControlConfig | None = None
+    parameter_provenance: ParameterProvenance = ParameterProvenance.ASSUMED
+    parameter_source_urls: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.name.strip():
             raise ValueError("vehicle name cannot be empty")
+        provenance, source_urls = validate_parameter_provenance(
+            self.parameter_provenance,
+            self.parameter_source_urls,
+        )
+        object.__setattr__(self, "parameter_provenance", provenance)
+        object.__setattr__(self, "parameter_source_urls", source_urls)
         if self.dry_mass_kg <= 0.0 or not math.isfinite(self.dry_mass_kg):
             raise ValueError("dry_mass_kg must be positive and finite")
         if self.displaced_volume_m3 <= 0.0 or not math.isfinite(
