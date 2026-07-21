@@ -1,0 +1,80 @@
+schema_version = 1
+name = "meshcat-fleet-showcase"
+duration_s = 300.0
+time_step_s = 0.01
+gravity_mps2 = 9.81
+water_density_kg_m3 = 1025.0
+surface_pressure_Pa = 101325.0
+water_temperature_C = 12.0
+seafloor_z_W_m = -20.0
+world_extent_m = 80.0
+
+[network]
+modem = "divenet-sealink-3km-oem"
+sound_speed_mps = 1500.0
+
+[[vehicles]]
+id = "surface_1"
+preset = "usv"
+position_W_m = [-3.0, -2.0, 0.0]
+
+[[vehicles.sensors]]
+id = "attitude"
+profile = "xsens-avior-ahrs"
+
+[[vehicles.sensors]]
+id = "bathymetry"
+profile = "cerulean-surveyor-240-16"
+rpy_BS_deg = [0.0, 90.0, 0.0]
+
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [-2.5, 1.5, -2.0]
+# The generic ROV has 0.5 kg of fail-safe positive buoyancy. Its vertical
+# thrusters supply the corresponding steady trim force in this showcase.
+wrench_command_B = [0.0, 0.0, 0.0, 0.0, 0.0, -4.905]
+
+[[vehicles.sensors]]
+id = "depth"
+profile = "blue-robotics-bar30"
+position_B_m = [0.0, 0.0, 0.1]
+
+[[vehicles.sensors]]
+id = "attitude"
+profile = "xsens-mti-630r"
+
+[[vehicles.sensors]]
+id = "altimeter"
+profile = "blue-robotics-ping-sonar"
+rpy_BS_deg = [0.0, 90.0, 0.0]
+
+[[vehicles]]
+id = "uuv_1"
+preset = "uuv"
+position_W_m = [2.5, -1.5, -3.0]
+# The propulsion-only UUV has no vertical actuator in this foundation model.
+# This declared vertical trim surrogate balances its 0.2 kg mass discrepancy.
+applied_wrench_B = [0.0, 0.0, 0.0, 0.0, 0.0, -1.962]
+
+[[vehicles.sensors]]
+id = "attitude"
+profile = "xsens-mti-630r"
+
+[[vehicles.sensors]]
+id = "forward_sonar"
+profile = "cerulean-omniscan-450fs-300m"
+
+[[vehicles]]
+id = "glider_1"
+preset = "glider"
+position_W_m = [2.5, 2.0, -2.5]
+rpy_deg = [0.0, 0.0, 180.0]
+
+[[vehicles.sensors]]
+id = "depth"
+profile = "blue-robotics-bar02"
+
+[[vehicles.sensors]]
+id = "attitude"
+profile = "xsens-mti-630r"

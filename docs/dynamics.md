@@ -6,6 +6,26 @@ and linearized surface attitude stiffness. The preset coefficients are
 illustrative engineering assumptions. They are not identified system
 parameters or validation data for a particular vehicle.
 
+## Flat free-surface transition
+
+Nominally submerged presets use their upright bounding-box height to estimate
+the fraction below the flat `z = 0` water surface:
+
+```text
+immersed_fraction = clamp((surface_z - box_bottom_z) / box_height, 0, 1)
+```
+
+Buoyancy, body drag, angular drag, glider wing force, diagonal added mass, and
+added rotational inertia are multiplied by this fraction. A fully emerged body
+therefore receives neither displaced-water support nor water-relative loads and
+falls back toward the water with dry-body inertia under Drake gravity. This
+prevents positive-buoyancy vehicles from continuing into the sky.
+
+The transition assumes an upright rectangular envelope. It does not integrate
+oriented wetted geometry, model wave elevation, slamming, ventilation, spray,
+or air drag. Surface-piercing USVs continue to use their separate linearized
+waterplane model.
+
 ## Diagonal effective inertia
 
 Each vehicle already declares dry translational mass `M_D`, dry rotational
@@ -90,6 +110,8 @@ Tests cover these invariants:
 - zero added mass leaves the marine wrench unchanged,
 - surge acceleration matches force divided by dry-plus-added mass,
 - effective inertia preserves static neutral-buoyancy balance,
+- free-surface buoyancy is full, half, and zero at the analytical box limits,
+- a positive-buoyancy ROV rises toward the surface without escaping above it,
 - glider wing force scales with speed squared,
 - glider wing force supplies lift while induced drag removes energy,
 - surface stiffness opposes positive roll and pitch,

@@ -50,6 +50,7 @@ def effective_inertia_wrench(
     rotation_WB: ArrayLike,
     uncorrected_wrench: MarineWrench,
     gravity_mps2: float,
+    immersion_fraction: float = 1.0,
 ) -> MarineWrench:
     """Scale loads to approximate configured diagonal added inertia.
 
@@ -63,6 +64,10 @@ def effective_inertia_wrench(
     rotation_WB = _rotation(rotation_WB)
     if gravity_mps2 <= 0.0 or not np.isfinite(gravity_mps2):
         raise ValueError("gravity_mps2 must be positive and finite")
+    if not 0.0 <= immersion_fraction <= 1.0 or not np.isfinite(
+        immersion_fraction
+    ):
+        raise ValueError("immersion_fraction must be finite and in [0, 1]")
     rotation_BW = rotation_WB.T
     marine_force_B = rotation_BW @ _vector(
         "uncorrected force", uncorrected_wrench.force_W_N, 3
@@ -74,9 +79,11 @@ def effective_inertia_wrench(
     gravity_force_B = rotation_BW @ gravity_force_W
 
     dry_mass = np.full(3, config.dry_mass_kg)
-    effective_mass = dry_mass + np.asarray(config.added_mass_diagonal_kg)
+    effective_mass = dry_mass + immersion_fraction * np.asarray(
+        config.added_mass_diagonal_kg
+    )
     dry_inertia = np.asarray(config.dry_inertia_diagonal_kg_m2)
-    effective_inertia = dry_inertia + np.asarray(
+    effective_inertia = dry_inertia + immersion_fraction * np.asarray(
         config.added_inertia_diagonal_kg_m2
     )
     corrected_force_B = (
@@ -103,13 +110,40 @@ def buoyancy_force_N(
         raise ValueError("water density and gravity must be positive")
     maximum = water_density_kg_m3 * config.displaced_volume_m3 * gravity_mps2
     if config.hydrostatic_mode is HydrostaticMode.SUBMERGED:
-        return maximum
+        return maximum * submerged_box_fraction(
+            config,
+            body_origin_z_W_m=body_origin_z_W_m,
+        )
 
     equilibrium = config.dry_mass_kg * gravity_mps2
     linearized = (
         equilibrium - config.surface_heave_stiffness_N_per_m * body_origin_z_W_m
     )
     return float(np.clip(linearized, 0.0, maximum))
+
+
+def submerged_box_fraction(
+    config: MarineVehicleConfig,
+    *,
+    body_origin_z_W_m: float,
+    water_surface_z_W_m: float = 0.0,
+) -> float:
+    """Return the fraction of an upright bounding box below flat water.
+
+    This deliberately simple free-surface transition prevents a nominally
+    submerged vehicle from receiving full buoyancy and water drag after it has
+    emerged. Roll and pitch are ignored; higher-fidelity wetted geometry is a
+    separate model.
+    """
+
+    if not np.isfinite(body_origin_z_W_m) or not np.isfinite(
+        water_surface_z_W_m
+    ):
+        raise ValueError("body origin and water surface must be finite")
+    height_m = config.dimensions_m[2]
+    bottom_z_W_m = body_origin_z_W_m - 0.5 * height_m
+    submerged_height_m = water_surface_z_W_m - bottom_z_W_m
+    return float(np.clip(submerged_height_m / height_m, 0.0, 1.0))
 
 
 def surface_restoring_torque_B(
@@ -224,16 +258,27 @@ def compute_marine_wrench(
 
     relative_linear_B = rotation_BW @ (velocity_W - current_W)
     angular_velocity_B = rotation_BW @ angular_velocity_W
+    immersion_fraction = (
+        submerged_box_fraction(
+            config,
+            body_origin_z_W_m=float(position_W[2]),
+        )
+        if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
+        else 1.0
+    )
     linear_drag = np.asarray(config.linear_drag_N_per_mps)
     quadratic_drag = np.asarray(config.quadratic_drag_N_per_mps2)
     drag_force_B = (
         -linear_drag * relative_linear_B
         - quadratic_drag * np.abs(relative_linear_B) * relative_linear_B
-    )
-    wing_force_B = glider_wing_force_B(
-        config,
-        relative_velocity_B_mps=relative_linear_B,
-        water_density_kg_m3=water_density_kg_m3,
+    ) * immersion_fraction
+    wing_force_B = (
+        glider_wing_force_B(
+            config,
+            relative_velocity_B_mps=relative_linear_B,
+            water_density_kg_m3=water_density_kg_m3,
+        )
+        * immersion_fraction
     )
     angular_linear_drag = np.asarray(config.angular_linear_drag_Nm_per_radps)
     angular_quadratic_drag = np.asarray(
@@ -244,7 +289,7 @@ def compute_marine_wrench(
         - angular_quadratic_drag
         * np.abs(angular_velocity_B)
         * angular_velocity_B
-    )
+    ) * immersion_fraction
 
     upward_force_N = (
         buoyancy_force_N(

@@ -16,6 +16,7 @@ expected value, observed value, units, tolerances, error, and pass status.
 | Check | Independent expectation |
 |---|---|
 | Submerged buoyancy | `rho * displaced_volume * gravity` |
+| Free-surface immersion | box centered on waterline has half buoyancy |
 | Surge drag | `-linear_coefficient * u - quadratic_coefficient * abs(u) * u` |
 | Surface heave | `mass * gravity - heave_stiffness * displacement` |
 | Diagonal added mass | `force / (dry_mass + added_mass)` |
@@ -38,8 +39,9 @@ idealized equations for the chosen inputs. It does **not** establish:
 - hydrodynamic coefficients for a physical vehicle,
 - tow-tank, CFD, pool, or sea-trial agreement,
 - manufacturer certification or protocol compatibility,
-- sensor calibration, drift, onboard filtering, or timing fidelity, or
-- acoustic packet error performance in a real channel.
+- sensor calibration, drift, onboard filtering, or timing fidelity,
+- acoustic packet error performance in a real channel, or
+- oriented wetted-volume, wave, slamming, or air-drag fidelity.
 
 Preset coefficients that are not sourced remain illustrative engineering
 assumptions. DiveNET timing remains provisional. Advancing a model beyond this

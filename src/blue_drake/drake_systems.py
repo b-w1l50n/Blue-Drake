@@ -12,8 +12,13 @@ from blue_drake.actuators import (
 from blue_drake.hydrodynamics import (
     compute_marine_wrench,
     effective_inertia_wrench,
+    submerged_box_fraction,
 )
-from blue_drake.vehicles import GliderControlConfig, MarineVehicleConfig
+from blue_drake.vehicles import (
+    GliderControlConfig,
+    HydrostaticMode,
+    MarineVehicleConfig,
+)
 
 try:
     from pydrake.common.value import AbstractValue
@@ -196,6 +201,14 @@ class MarineHydrodynamicForceSystem(LeafSystem):
             rotation_WB=pose.rotation().matrix(),
             uncorrected_wrench=wrench,
             gravity_mps2=self._gravity_mps2,
+            immersion_fraction=(
+                submerged_box_fraction(
+                    self._config,
+                    body_origin_z_W_m=float(pose.translation()[2]),
+                )
+                if self._config.hydrostatic_mode is HydrostaticMode.SUBMERGED
+                else 1.0
+            ),
         )
         applied = ExternallyAppliedSpatialForce()
         applied.body_index = self._body_index

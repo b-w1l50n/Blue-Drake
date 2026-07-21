@@ -9,6 +9,7 @@ from blue_drake.hydrodynamics import (
     compute_marine_wrench,
     effective_inertia_wrench,
     glider_wing_force_B,
+    submerged_box_fraction,
     surface_restoring_torque_B,
 )
 from blue_drake.vehicles import glider_preset, rov_preset, usv_preset
@@ -34,6 +35,42 @@ def test_submerged_buoyancy_matches_archimedes_principle() -> None:
         water_density_kg_m3=1025.0,
         gravity_mps2=9.81,
     ) == pytest.approx(expected)
+
+
+def test_submerged_box_fraction_transitions_across_waterline() -> None:
+    config = rov_preset()
+    height = config.dimensions_m[2]
+    assert submerged_box_fraction(
+        config, body_origin_z_W_m=-height
+    ) == pytest.approx(1.0)
+    assert submerged_box_fraction(
+        config, body_origin_z_W_m=0.0
+    ) == pytest.approx(0.5)
+    assert submerged_box_fraction(
+        config, body_origin_z_W_m=height
+    ) == pytest.approx(0.0)
+
+
+def test_emerged_submerged_vehicle_has_no_buoyancy_or_water_drag() -> None:
+    config = rov_preset()
+    wrench = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 2.0),
+        translational_velocity_W_mps=(1.0, 0.0, 0.0),
+    )
+    assert wrench.force_W_N == pytest.approx(np.zeros(3))
+
+
+def test_partly_emerged_buoyancy_scales_with_immersed_fraction() -> None:
+    config = rov_preset()
+    full = 1025.0 * config.displaced_volume_m3 * 9.81
+    support = buoyancy_force_N(
+        config,
+        body_origin_z_W_m=0.0,
+        water_density_kg_m3=1025.0,
+        gravity_mps2=9.81,
+    )
+    assert support == pytest.approx(0.5 * full)
 
 
 def test_surface_support_is_at_equilibrium_on_waterline() -> None:
@@ -148,6 +185,22 @@ def test_effective_inertia_preserves_static_neutral_buoyancy() -> None:
         gravity_mps2=gravity,
     )
     assert corrected.force_W_N == pytest.approx(upward)
+
+
+def test_zero_immersion_removes_added_inertia_correction() -> None:
+    config = rov_preset()
+    original = MarineWrench(
+        torque_W_Nm=np.array([1.0, 2.0, 3.0]),
+        force_W_N=np.array([4.0, 5.0, 6.0]),
+    )
+    corrected = effective_inertia_wrench(
+        config,
+        rotation_WB=np.eye(3),
+        uncorrected_wrench=original,
+        gravity_mps2=9.81,
+        immersion_fraction=0.0,
+    )
+    assert corrected.vector == pytest.approx(original.vector)
 
 
 def test_zero_added_inertia_leaves_wrench_unchanged() -> None:

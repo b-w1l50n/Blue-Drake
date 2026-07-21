@@ -6,7 +6,7 @@ a physical model.
 | Capability | Current status | Important omissions |
 |---|---|---|
 | Rigid-body motion | Implemented with Drake `MultibodyPlant` | Flexible bodies |
-| Submerged buoyancy | Implemented | Compressibility, flooding |
+| Submerged buoyancy | Archimedes support with upright-box free-surface transition | Oriented wetted volume, waves, compressibility, flooding |
 | Surface hydrostatics | Linearized heave, roll, and pitch | Waves, slamming, planing |
 | Linear/quadratic drag | Implemented per body axis | Cross-coupling, CFD |
 | Restoring moment | Center-of-buoyancy offset | Metacentric model |

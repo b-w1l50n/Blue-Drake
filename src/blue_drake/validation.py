@@ -105,6 +105,28 @@ def _submerged_buoyancy_check() -> ValidationCheck:
     )
 
 
+def _free_surface_buoyancy_check() -> ValidationCheck:
+    density, gravity = 1025.0, 9.81
+    config = rov_preset()
+    full_support = density * config.displaced_volume_m3 * gravity
+    observed_support = buoyancy_force_N(
+        config,
+        body_origin_z_W_m=0.0,
+        water_density_kg_m3=density,
+        gravity_mps2=gravity,
+    )
+    return ValidationCheck(
+        check_id="free-surface-immersion",
+        description=(
+            "An upright box centered on the waterline is half immersed."
+        ),
+        equation="F_b(z=0) / F_b(fully submerged) = 1/2",
+        expected=0.5,
+        observed=observed_support / full_support,
+        unit="ratio",
+    )
+
+
 def _surge_drag_check() -> ValidationCheck:
     density, gravity, speed = 1025.0, 9.81, 0.8
     config = rov_preset()
@@ -270,6 +292,7 @@ def run_validation_suite() -> ValidationReport:
         benchmark_schema_version=1,
         checks=(
             _submerged_buoyancy_check(),
+            _free_surface_buoyancy_check(),
             _surge_drag_check(),
             _surface_heave_check(),
             _added_mass_check(),

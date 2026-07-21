@@ -46,6 +46,15 @@ blue-drake run scenarios/mixed_marine.toml --no-visualizer
 blue-drake scenarios/mixed_marine.toml --no-visualizer
 ```
 
+`mixed_marine.toml` is a two-second dynamics and communications example with
+continuous propulsion commands. It is not a station-keeping demonstration.
+For a long browser session, `fleet_showcase.toml` runs for five minutes with
+explicit ROV and UUV trim loads and no continuous horizontal propulsion:
+
+```bash
+blue-drake scenarios/fleet_showcase.toml
+```
+
 Machine-readable output uses JSON with stable unit-bearing field names where
 applicable. It is an inspection interface, not a vendor protocol.
 

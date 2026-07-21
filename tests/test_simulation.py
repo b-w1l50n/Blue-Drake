@@ -270,6 +270,36 @@ def test_explicit_body_wrench_moves_vehicle_forward() -> None:
     assert position[0] > 0.04
 
 
+def test_positive_buoyancy_settles_at_free_surface() -> None:
+    from pydrake.math import RigidTransform
+    from pydrake.systems.analysis import Simulator
+
+    model = build_marine_fleet_diagram({"rov_1": rov_preset()})
+    simulator = Simulator(model.diagram)
+    context = simulator.get_mutable_context()
+    plant_context = model.plant.GetMyMutableContextFromRoot(context)
+    vehicle = model.vehicle("rov_1")
+    model.plant.SetFreeBodyPose(
+        plant_context,
+        vehicle.body,
+        RigidTransform([0.0, 0.0, -0.25]),
+    )
+    model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
+        context, np.zeros(3)
+    )
+    model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
+        context, np.zeros(6)
+    )
+    model.diagram.GetInputPort("rov_1_wrench_command_B").FixValue(
+        context, np.zeros(6)
+    )
+    simulator.Initialize()
+    simulator.AdvanceTo(5.0)
+
+    z_W_m = vehicle.body.EvalPoseInWorld(plant_context).translation()[2]
+    assert -0.25 < z_W_m < 0.0
+
+
 def test_bounded_actuator_command_moves_vehicle_and_reports_thrust() -> None:
     from pydrake.math import RigidTransform
     from pydrake.systems.analysis import Simulator

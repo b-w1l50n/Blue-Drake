@@ -12,6 +12,25 @@ from blue_drake.sensors import (
 from blue_drake.vehicles import VehicleKind
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SHOWCASE_SCENARIO = REPO_ROOT / "scenarios" / "fleet_showcase.toml"
+
+
+def test_fleet_showcase_declares_long_running_trimmed_configuration() -> None:
+    scenario = load_scenario(SHOWCASE_SCENARIO)
+    assert scenario.duration_s == 300.0
+    assert len(scenario.vehicles) == 4
+    rov = next(
+        vehicle
+        for vehicle in scenario.vehicles
+        if vehicle.vehicle_id == "rov_1"
+    )
+    uuv = next(
+        vehicle
+        for vehicle in scenario.vehicles
+        if vehicle.vehicle_id == "uuv_1"
+    )
+    assert rov.wrench_command_B[5] == pytest.approx(-4.905)
+    assert uuv.applied_wrench_B[5] == pytest.approx(-1.962)
 
 
 def test_mixed_scenario_loads_all_public_vehicle_categories() -> None:

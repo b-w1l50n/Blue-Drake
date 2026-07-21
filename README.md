@@ -102,6 +102,13 @@ The command prints a local Meshcat URL. For a terminal-only deterministic run:
   --no-visualizer --duration 2
 ```
 
+For a five-minute Meshcat session with all four vehicles trimmed in view, use
+the dedicated showcase instead of extending the short dynamic example:
+
+```bash
+.venv/bin/blue-drake scenarios/fleet_showcase.toml
+```
+
 Validate or inspect a scenario without launching Drake:
 
 ```bash
