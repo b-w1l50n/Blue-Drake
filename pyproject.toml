@@ -1,23 +1,52 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27,<2"]
 build-backend = "hatchling.build"
 
 [project]
 name = "blue-drake-marine"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Developer-oriented marine robotics simulation built on Drake"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<3.15"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Blue Drake contributors" },
+]
+keywords = [
+  "drake",
+  "marine-robotics",
+  "robotics-simulation",
+  "underwater-robotics",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "License :: OSI Approved :: BSD License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering",
+]
 dependencies = [
-  "drake==1.45.0; platform_system == 'Darwin'",
-  "drake==1.54.0; platform_system != 'Darwin'",
-  "numpy>=2.0",
+  "numpy>=2.0,<3",
 ]
 
 [project.optional-dependencies]
+drake-current = [
+  "drake==1.54.0",
+]
+drake-sonoma = [
+  "drake==1.45.0; platform_system == 'Darwin'",
+]
 dev = [
-  "pytest>=8",
-  "ruff>=0.12",
+  "build>=1.2,<2",
+  "pytest>=8,<10",
+  "ruff>=0.12,<1",
+  "twine>=5,<7",
 ]
 
 [project.scripts]
@@ -25,6 +54,9 @@ blue-drake = "blue_drake.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/blue_drake"]
+
+[tool.hatch.version]
+path = "src/blue_drake/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

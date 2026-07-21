@@ -38,6 +38,7 @@ remaining optional.
 - `blue_drake.inspection`: JSON-ready scenario and built-in catalog summaries.
 - `blue_drake.run_artifacts`: non-overwriting application-side CSV/JSON export.
 - `blue_drake.planning`: pure 2D/3D grid geometry and A* path search.
+- `blue_drake.validation`: pure analytical implementation benchmarks.
 - `blue_drake.cli`: a thin example runner, not simulation state.
 
 Actuated vehicle presets export a six-element commanded body-wrench input and
@@ -84,7 +85,8 @@ state, preserving a hard boundary between generic algorithms and autonomy.
 Configuration values are immutable. Public names carry units and frame suffixes
 where ambiguity is possible. World-frame names end in `_W`; body-frame names end
 in `_B`. Breaking changes are acceptable before version 1.0 but must be noted in
-release documentation.
+release documentation. Scenario, artifact, and benchmark formats carry their
+own integer schema versions; see [compatibility](compatibility.md).
 
 The current Python `LeafSystem` adapters are double-only and do not declare
 scalar conversion to AutoDiff or symbolic systems. Pure configuration and

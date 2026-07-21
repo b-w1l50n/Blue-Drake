@@ -34,6 +34,9 @@ Run the local checks with:
 ruff check .
 ruff format --check .
 pytest
+blue-drake benchmark
+python -m build
+python -m twine check dist/*
 ```
 
 Core systems should use Drake `Context` state and parameters. External
@@ -45,6 +48,9 @@ Scenario schema changes require an explicit versioning decision, strict parser
 tests, and updated JSON inspection examples. Run artifacts are append-free:
 tools must create a new directory and must not overwrite prior experiment data.
 Generic planners must remain independent of controllers and mission state.
+Compatibility changes must update `docs/compatibility.md`. A release must build
+an sdist and wheel, validate both with Twine, install the wheel into a clean
+environment, and smoke-test version, scenario validation, and benchmarks.
 
 ## Public boundary
 

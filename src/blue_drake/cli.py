@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 
+from blue_drake._version import __version__
 from blue_drake.acoustics import schedule_transmissions
 from blue_drake.inspection import catalog_summary, scenario_summary
 from blue_drake.scenario import MarineScenario, load_scenario
@@ -23,7 +24,7 @@ os.environ.setdefault(
     os.path.join(tempfile.gettempdir(), "blue-drake-matplotlib"),
 )
 
-_COMMANDS = {"run", "validate", "inspect", "catalog"}
+_COMMANDS = {"run", "validate", "inspect", "catalog", "benchmark"}
 
 
 def _add_json_option(parser: argparse.ArgumentParser) -> None:
@@ -36,6 +37,11 @@ def _add_json_option(parser: argparse.ArgumentParser) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     run = subparsers.add_parser("run", help="simulate a TOML scenario")
@@ -70,6 +76,10 @@ def _parser() -> argparse.ArgumentParser:
         "catalog", help="list built-in vehicle, sensor, and modem profiles"
     )
     _add_json_option(catalog)
+    benchmark = subparsers.add_parser(
+        "benchmark", help="run analytical implementation benchmarks"
+    )
+    _add_json_option(benchmark)
     return parser
 
 
@@ -141,6 +151,18 @@ def _print_catalog(catalog: dict) -> None:
     print("Modem profiles:")
     for item in catalog["modems"]:
         print(f"  {item['profile_id']}: {item['display_name']}")
+
+
+def _print_benchmark(report: dict) -> None:
+    status = "PASS" if report["passed"] else "FAIL"
+    print(f"Analytical benchmarks: {status} ({report['check_count']} checks)")
+    for check in report["checks"]:
+        result = "PASS" if check["passed"] else "FAIL"
+        print(
+            f"  {result} {check['check_id']}: "
+            f"observed={check['observed']:.12g} "
+            f"expected={check['expected']:.12g} {check['unit']}"
+        )
 
 
 def _configure_context(model, scenario: MarineScenario, context) -> object:
@@ -307,6 +329,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = _parse_args(argv)
     try:
+        if args.command == "benchmark":
+            from blue_drake.validation import run_validation_suite
+
+            report = run_validation_suite().to_dict()
+            if args.json:
+                print(json.dumps(report, indent=2, sort_keys=True))
+            else:
+                _print_benchmark(report)
+            return 0 if report["passed"] else 1
         if args.command == "catalog":
             catalog = catalog_summary()
             if args.json:

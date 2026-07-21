@@ -7,6 +7,27 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,drake-current]'
+      - run: ruff check .
+      - run: ruff format --check .
+      - run: pytest
+      - run: blue-drake --version
+      - run: blue-drake validate scenarios/mixed_marine.toml
+      - run: blue-drake benchmark --json
+
+  package:
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,8 +35,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install -e '.[dev]'
-      - run: ruff check .
-      - run: ruff format --check .
-      - run: pytest
-
+      - run: python -m pip install 'build>=1.2,<2' 'twine>=5,<7'
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - run: python -m pip install --force-reinstall dist/*.whl
+      - run: blue-drake --version
+      - run: blue-drake validate scenarios/custom_sensors.toml
+      - run: blue-drake benchmark

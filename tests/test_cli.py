@@ -5,6 +5,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
+from blue_drake import __version__
 from blue_drake.cli import _parse_args, main
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +18,17 @@ def test_legacy_scenario_argument_maps_to_run_command() -> None:
     args = _parse_args([str(MIXED_SCENARIO), "--no-visualizer"])
     assert args.command == "run"
     assert args.scenario == str(MIXED_SCENARIO)
+
+
+def test_package_version_has_release_candidate_value() -> None:
+    assert __version__ == "0.1.0"
+
+
+def test_version_option_reports_single_source_of_truth(capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        _parse_args(["--version"])
+    assert exc_info.value.code == 0
+    assert capsys.readouterr().out.strip().endswith(f" {__version__}")
 
 
 def test_validate_does_not_need_simulation(capsys) -> None:

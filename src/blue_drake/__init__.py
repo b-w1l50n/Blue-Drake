@@ -1,5 +1,6 @@
 """Marine robotics simulation systems built on Drake."""
 
+from blue_drake._version import __version__
 from blue_drake.actuators import (
     ActuatorBankConfig,
     ActuatorKind,
@@ -41,6 +42,7 @@ __all__ = [
     "SensorKind",
     "VehicleKind",
     "WrenchAllocation",
+    "__version__",
     "allocate_wrench",
     "glider_preset",
     "plan_grid_path",

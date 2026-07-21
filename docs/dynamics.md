@@ -96,6 +96,10 @@ Tests cover these invariants:
 - glider commands saturate and follow their analytic first-order response, and
 - a mixed surface/subsea Drake simulation advances with all models connected.
 
+The release-facing subset is reproducible with `blue-drake benchmark`; its
+equations, numeric evidence, and claim boundary are documented in
+[analytical validation evidence](validation.md).
+
 Moving these models beyond “foundation” requires comparison against published
 coefficients, tow-tank data, sea-trial logs, or another clearly identified
 reference dataset.

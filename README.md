@@ -33,10 +33,10 @@ inertial sensors, and a DiveNET Sealink acoustic modem profile. Product names
 identify simulation targets only; their manufacturers do not sponsor or endorse
 this project.
 
-## Current milestone
+## Version 0.1 release candidate
 
-Milestone 7 adds experiment tooling and generic geometric planning to the
-existing acoustic, dynamics, actuation, and sensor foundations:
+The initial release candidate combines experiment tooling and generic geometric
+planning with acoustic, dynamics, actuation, and sensor foundations:
 
 - validated scenario and vehicle configuration types,
 - submerged and surface-piercing hydrostatic modes,
@@ -70,8 +70,10 @@ existing acoustic, dynamics, actuation, and sensor foundations:
 - separate ideal, measured, and explicit error ports,
 - diagonal zero-rate effective-inertia handling for configured added mass,
 - low-angle glider lift plus bounded buoyancy and pitch controls,
-- linearized USV roll and pitch hydrostatic stiffness, and
-- deterministic unit and diagram tests.
+- linearized USV roll and pitch hydrostatic stiffness,
+- deterministic unit and diagram tests,
+- a versioned, machine-readable analytical benchmark suite, and
+- wheel, sdist, clean-install, and supported Python/Drake CI release gates.
 
 This is not yet a validated marine digital twin. The preset actuator numbers
 are illustrative, not vendor data. Coupled added-mass dynamics, wave excitation,
@@ -82,13 +84,14 @@ deliberately deferred and listed in
 
 ## Quick start
 
-Blue Drake currently uses Drake 1.45 on macOS Sonoma because that is the final
-Drake release supporting this development host. Linux CI is intended to track a
-current supported Drake release in a later milestone.
+The supported release path is CPython 3.12-3.14 on Ubuntu 24.04 with Drake
+1.54.0. A frozen Drake 1.45 extra remains available for the original macOS
+Sonoma development host; that platform is no longer supported upstream. See
+[the compatibility policy](docs/compatibility.md).
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
+.venv/bin/pip install -e '.[dev,drake-current]'
 .venv/bin/blue-drake scenarios/mixed_marine.toml
 ```
 
@@ -104,6 +107,7 @@ Validate or inspect a scenario without launching Drake:
 ```bash
 .venv/bin/blue-drake validate scenarios/mixed_marine.toml
 .venv/bin/blue-drake inspect scenarios/mixed_marine.toml --json
+.venv/bin/blue-drake benchmark --json
 ```
 
 The library API also exposes `build_marine_fleet_diagram()` so Drake users can
@@ -124,7 +128,9 @@ should also read [sensor semantics and provenance](docs/sensors.md),
 [custom sensor profiles and supplied values](docs/custom_sensors.md), plus
 [scenario and experiment tooling](docs/experiment_tooling.md),
 [generic grid path planning](docs/planning.md), and
-[contributing](CONTRIBUTING.md).
+[analytical validation evidence](docs/validation.md). Release users should also
+read [compatibility and versioning](docs/compatibility.md),
+[the changelog](CHANGELOG.md), and [contributing](CONTRIBUTING.md).
 
 ## License
 
