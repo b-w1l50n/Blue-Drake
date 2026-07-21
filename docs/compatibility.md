@@ -45,7 +45,7 @@ practical.
 Three data contracts are versioned independently:
 
 - TOML scenarios use `schema_version` (currently 1),
-- run manifests use `artifact_schema_version` (currently 1), and
+- run manifests use `artifact_schema_version` (currently 2), and
 - benchmark JSON uses `benchmark_schema_version` (currently 2).
 
 Unknown scenario versions are rejected. A breaking contract change requires a

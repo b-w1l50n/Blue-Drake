@@ -5,17 +5,27 @@ from __future__ import annotations
 import csv
 import json
 import math
+import platform
 import re
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from blue_drake._version import __version__
 from blue_drake.inspection import scenario_summary
 from blue_drake.scenario import MarineScenario
 
 if TYPE_CHECKING:
     from blue_drake.simulation import MarineFleetModel
 
-RUN_ARTIFACT_SCHEMA_VERSION = 1
+RUN_ARTIFACT_SCHEMA_VERSION = 2
+
+
+def _distribution_version(distribution: str) -> str:
+    try:
+        return version(distribution)
+    except PackageNotFoundError:
+        return "unknown"
 
 
 def write_run_artifacts(
@@ -80,6 +90,12 @@ def write_run_artifacts(
         )
     manifest = {
         "artifact_schema_version": RUN_ARTIFACT_SCHEMA_VERSION,
+        "software": {
+            "blue_drake_version": __version__,
+            "drake_version": _distribution_version("drake"),
+            "numpy_version": _distribution_version("numpy"),
+            "python_version": platform.python_version(),
+        },
         "simulated_duration_s": simulated_duration_s,
         "logging_period_s": logging_period_s,
         "scenario": scenario_summary(scenario),

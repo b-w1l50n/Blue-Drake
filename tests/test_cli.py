@@ -130,7 +130,11 @@ def test_run_writes_non_overwriting_csv_artifacts(
     manifest = json.loads(
         (output_dir / "manifest.json").read_text(encoding="utf-8")
     )
-    assert manifest["artifact_schema_version"] == 1
+    assert manifest["artifact_schema_version"] == 2
+    assert manifest["software"]["blue_drake_version"] == __version__
+    assert manifest["software"]["drake_version"]
+    assert manifest["software"]["numpy_version"]
+    assert manifest["software"]["python_version"]
     assert manifest["simulated_duration_s"] == 0.05
     assert manifest["scenario"]["vehicles"][0]["sensors"][0][
         "supplied_value"
@@ -148,3 +152,51 @@ def test_run_writes_non_overwriting_csv_artifacts(
     capsys.readouterr()
     assert main(arguments) == 2
     assert "already exists" in capsys.readouterr().err
+
+
+def test_identical_runs_produce_byte_identical_artifacts(
+    tmp_path: Path, capsys
+) -> None:
+    custom = REPO_ROOT / "scenarios" / "custom_sensors.toml"
+    destinations = [tmp_path / "first", tmp_path / "second"]
+    for destination in destinations:
+        assert (
+            main(
+                [
+                    "run",
+                    str(custom),
+                    "--no-visualizer",
+                    "--duration",
+                    "0.05",
+                    "--realtime-rate",
+                    "0",
+                    "--output-dir",
+                    str(destination),
+                    "--log-period",
+                    "0.02",
+                ]
+            )
+            == 0
+        )
+        capsys.readouterr()
+
+    first_files = sorted(path.name for path in destinations[0].iterdir())
+    second_files = sorted(path.name for path in destinations[1].iterdir())
+    assert first_files == second_files
+    for filename in first_files:
+        assert (destinations[0] / filename).read_bytes() == (
+            destinations[1] / filename
+        ).read_bytes()
+
+
+def test_runtime_failure_is_reported_without_traceback(
+    monkeypatch, capsys
+) -> None:
+    def fail_run(args, scenario) -> int:
+        raise RuntimeError("simulator failed cleanly")
+
+    monkeypatch.setattr("blue_drake.cli._run", fail_run)
+    assert main(["run", str(MIXED_SCENARIO), "--no-visualizer"]) == 2
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err == "blue-drake: error: simulator failed cleanly\n"

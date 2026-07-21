@@ -90,9 +90,9 @@ blue-drake run scenarios/custom_sensors.toml \
 The target directory must not exist. Blue Drake never replaces or appends to an
 existing run directory. A successful run creates:
 
-- `manifest.json`, containing artifact schema version 1, scenario inspection
-  data, calculated acoustic events, simulated duration, logging period, and log
-  column contracts;
+- `manifest.json`, containing artifact schema version 2, Blue Drake, Drake,
+  NumPy, and Python versions, scenario inspection data, calculated acoustic
+  events, simulated duration, logging period, and log column contracts;
 - `<vehicle>_state.csv`, containing time, free-body quaternion, world position,
   angular velocity, and translational velocity; and
 - `<vehicle>_<sensor>_measurement.csv`, containing the documented sensor output
@@ -102,6 +102,12 @@ CSV values use round-trip-safe floating-point formatting. Times come from Drake
 simulation time, not wall time. Logs remain in memory until the run completes;
 large scenarios therefore require an explicit memory-budget review before very
 high-rate, long-duration use.
+
+Two identical runs in one supported software environment are required to
+produce byte-identical manifests and CSV files. Floating-point trajectories are
+not promised to be byte-identical across different Drake, NumPy, Python, CPU,
+or operating-system versions; the manifest records the relevant software
+versions so comparisons remain reviewable.
 
 The logger does not collect application messages, network traffic, credentials,
 ROS data, or hardware interfaces. Acoustic events in the manifest are the same

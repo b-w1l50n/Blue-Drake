@@ -396,7 +396,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 _print_scenario_summary(summary)
             return 0
         return _run(args, scenario)
-    except (OSError, ValueError) as exc:
+    except (ImportError, OSError, RuntimeError, ValueError) as exc:
         print(f"blue-drake: error: {exc}", file=sys.stderr)
         return 2
 
