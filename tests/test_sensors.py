@@ -7,10 +7,12 @@ import pytest
 
 from blue_drake.sensors import (
     GRAVITY_MPS2,
+    CustomVectorSensorProfile,
     MountedSensorConfig,
     SensorKind,
     bar02_profile,
     bar30_profile,
+    custom_vector_measurement,
     flat_seafloor_range,
     omniscan_450fs_300m_profile,
     ping_sonar_profile,
@@ -49,6 +51,43 @@ def test_profile_lookup_is_stable_and_rejects_unknown_names() -> None:
     assert sensor_profile("XSENS_MTI_630R").profile_id == "xsens-mti-630r"
     with pytest.raises(ValueError, match="unknown sensor profile"):
         sensor_profile("imaginary-dvl")
+
+
+def test_custom_vector_preserves_metadata_and_reports_bounds() -> None:
+    profile = CustomVectorSensorProfile(
+        profile_id="water-quality",
+        display_name="Student Water Quality Package",
+        channel_names=("salinity", "turbidity"),
+        units=("PSU", "NTU"),
+        minimum_values=(0.0, 0.0),
+        maximum_values=(50.0, 100.0),
+        default_values=(35.0, 2.0),
+    )
+    assert profile.size == 2
+    assert profile.provenance.value == "assumed"
+    assert MountedSensorConfig("defaulted", profile).supplied_value == (
+        35.0,
+        2.0,
+    )
+    assert custom_vector_measurement(
+        profile, values=(34.5, 3.0), error=(0.5, -1.0)
+    ) == pytest.approx([35.0, 2.0, 1.0])
+    assert custom_vector_measurement(
+        profile, values=(55.0, 3.0)
+    ) == pytest.approx([50.0, 3.0, 0.0])
+
+
+def test_custom_vector_rejects_ambiguous_channel_metadata() -> None:
+    with pytest.raises(ValueError, match="one nonempty unit"):
+        CustomVectorSensorProfile(
+            profile_id="bad",
+            display_name="Bad",
+            channel_names=("one", "two"),
+            units=("m",),
+            minimum_values=(0.0, 0.0),
+            maximum_values=(1.0, 1.0),
+            default_values=(0.5, 0.5),
+        )
 
 
 def test_xsens_avior_is_distinct_from_mti_630r() -> None:

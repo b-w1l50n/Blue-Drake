@@ -35,8 +35,8 @@ this project.
 
 ## Current milestone
 
-Milestone 5 adds a deterministic acoustic-event layer and clearer mixed-domain
-visual context to the existing dynamics, actuation, and sensor foundations:
+Milestone 6 adds strict user-defined sensor profiles and supplied-value ports to
+the milestone-5 acoustic, dynamics, actuation, and sensor foundations:
 
 - validated scenario and vehicle configuration types,
 - submerged and surface-piercing hydrostatic modes,
@@ -54,6 +54,12 @@ visual context to the existing dynamics, actuation, and sensor foundations:
   and transmitter-conflict diagnostics,
 - strict TOML acoustic transmission schedules and CLI event summaries,
 - translucent water-surface and seafloor context in Meshcat,
+- scenario-defined pressure, IMU, and sonar operating envelopes that reuse the
+  existing transparent physical calculations,
+- bounded custom numeric-vector sensors with named channels and units,
+- explicit custom-value, bias, error, ideal, measured, and validity semantics,
+- declared `assumed`, `measured`, `fitted`, or `published` provenance for custom
+  parameters,
 - sourced Blue Robotics, Cerulean, and Xsens profiles,
 - mounted pressure/depth, raw IMU, and center-ray sonar outputs,
 - separate ideal, measured, and explicit error ports,
@@ -102,7 +108,9 @@ See [architecture](docs/architecture.md), [fidelity](docs/fidelity.md), and
 [actuation](docs/actuation.md) before extending a model. Sensor contributors
 should also read [sensor semantics and provenance](docs/sensors.md),
 [acoustic communication semantics](docs/acoustics.md), and
-[marine dynamics](docs/dynamics.md), plus [contributing](CONTRIBUTING.md).
+[marine dynamics](docs/dynamics.md). Custom sensor authors should read
+[custom sensor profiles and supplied values](docs/custom_sensors.md), plus
+[contributing](CONTRIBUTING.md).
 
 ## License
 

@@ -27,6 +27,7 @@ Output vectors are:
 | Pressure | `[pressure_Pa, inferred_depth_m, temperature_C, valid]` |
 | Raw IMU | `[gyro_S_radps(3), specific_force_S_mps2(3), gyro_valid, accel_valid]` |
 | Sonar | `[center_ray_range_m, valid]` |
+| Custom vector | `[declared channels..., valid]` |
 
 Pressure is calculated from the sensor's world `z`, surface pressure, water
 density, and gravity. Depth is inferred back from measured pressure. Raw IMU
@@ -58,6 +59,11 @@ Biases and error inputs use output-native units. Pressure sensors accept
 `[pressure_Pa, temperature_C]`; IMUs accept three gyro errors in rad/s followed
 by three accelerometer errors in m/s²; sonar accepts range error in meters.
 Values are applied before range clipping and validity evaluation.
+
+Scenario-defined physical profiles use the same output contracts and
+calculations. Generic custom vectors instead receive their ideal values through
+an explicit diagram input; they do not consume plant truth. See
+[custom sensor profiles and supplied values](custom_sensors.md).
 
 Published resolution and noise density are metadata, not automatically treated as Gaussian
 standard deviation. Resolution, accuracy, repeatability, bias stability, and

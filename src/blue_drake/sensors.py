@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 
@@ -22,6 +23,16 @@ class SensorKind(StrEnum):
     ECHOSOUNDER = "echosounder"
     MULTIBEAM_ECHOSOUNDER = "multibeam_echosounder"
     FORWARD_LOOKING_SONAR = "forward_looking_sonar"
+    CUSTOM_VECTOR = "custom_vector"
+
+
+class ParameterProvenance(StrEnum):
+    """Declared origin of user-configurable profile parameters."""
+
+    PUBLISHED = "published"
+    MEASURED = "measured"
+    FITTED = "fitted"
+    ASSUMED = "assumed"
 
 
 def _vector(name: str, value: ArrayLike, size: int) -> Vector:
@@ -36,9 +47,30 @@ def _positive(name: str, value: float) -> None:
         raise ValueError(f"{name} must be positive and finite")
 
 
+def _profile_identity(
+    profile_id: str,
+    display_name: str,
+    provenance: ParameterProvenance | str,
+    source_url: str | None,
+) -> ParameterProvenance:
+    if not profile_id.strip() or not display_name.strip():
+        raise ValueError("sensor profile identifiers are required")
+    if source_url is not None and not source_url.strip():
+        raise ValueError("source_url cannot be empty when supplied")
+    try:
+        normalized = ParameterProvenance(provenance)
+    except ValueError as exc:
+        raise ValueError(
+            f"unsupported parameter provenance: {provenance}"
+        ) from exc
+    if normalized is not ParameterProvenance.ASSUMED and source_url is None:
+        raise ValueError(f"{normalized} sensor parameters require a source_url")
+    return normalized
+
+
 @dataclass(frozen=True)
 class PressureSensorProfile:
-    """Published operating envelope for a pressure/depth sensor."""
+    """Operating envelope for a pressure/depth sensor."""
 
     profile_id: str
     display_name: str
@@ -46,17 +78,24 @@ class PressureSensorProfile:
     approximate_depth_rating_m: float
     nominal_depth_resolution_m: float
     temperature_accuracy_C: float
-    source_url: str
+    source_url: str | None
     source_retrieved: str = "2026-07-21"
+    provenance: ParameterProvenance = ParameterProvenance.PUBLISHED
     kind: SensorKind = SensorKind.PRESSURE
 
     def __post_init__(self) -> None:
         if self.kind is not SensorKind.PRESSURE:
             raise ValueError("pressure profile kind must be pressure")
-        if not self.profile_id or not self.display_name or not self.source_url:
-            raise ValueError(
-                "sensor profile identifiers and source are required"
-            )
+        object.__setattr__(
+            self,
+            "provenance",
+            _profile_identity(
+                self.profile_id,
+                self.display_name,
+                self.provenance,
+                self.source_url,
+            ),
+        )
         for name in (
             "maximum_pressure_Pa",
             "approximate_depth_rating_m",
@@ -68,7 +107,7 @@ class PressureSensorProfile:
 
 @dataclass(frozen=True)
 class ImuSensorProfile:
-    """Published raw-sensor envelope for an inertial measurement unit."""
+    """Raw-sensor envelope for an inertial measurement unit."""
 
     profile_id: str
     display_name: str
@@ -79,17 +118,24 @@ class ImuSensorProfile:
     maximum_output_rate_hz: float
     roll_pitch_accuracy_rad_rms: float
     heading_accuracy_rad_rms: float
-    source_url: str
+    source_url: str | None
     source_retrieved: str = "2026-07-21"
+    provenance: ParameterProvenance = ParameterProvenance.PUBLISHED
     kind: SensorKind = SensorKind.IMU
 
     def __post_init__(self) -> None:
         if self.kind is not SensorKind.IMU:
             raise ValueError("IMU profile kind must be imu")
-        if not self.profile_id or not self.display_name or not self.source_url:
-            raise ValueError(
-                "sensor profile identifiers and source are required"
-            )
+        object.__setattr__(
+            self,
+            "provenance",
+            _profile_identity(
+                self.profile_id,
+                self.display_name,
+                self.provenance,
+                self.source_url,
+            ),
+        )
         for name in ("gyroscope_range_radps", "accelerometer_range_mps2"):
             values = _vector(name, getattr(self, name), 3)
             if np.any(values <= 0.0):
@@ -109,7 +155,7 @@ class ImuSensorProfile:
 
 @dataclass(frozen=True)
 class SonarProfile:
-    """Published geometric and acoustic envelope for a sonar target."""
+    """Geometric and acoustic envelope for a sonar target."""
 
     profile_id: str
     display_name: str
@@ -122,8 +168,9 @@ class SonarProfile:
     range_resolution_fraction: float
     depth_rating_m: float
     maximum_ping_rate_hz: float | None
-    source_url: str
+    source_url: str | None
     source_retrieved: str = "2026-07-21"
+    provenance: ParameterProvenance = ParameterProvenance.PUBLISHED
 
     def __post_init__(self) -> None:
         if self.kind not in {
@@ -132,10 +179,16 @@ class SonarProfile:
             SensorKind.FORWARD_LOOKING_SONAR,
         }:
             raise ValueError("sonar profile must use a sonar sensor kind")
-        if not self.profile_id or not self.display_name or not self.source_url:
-            raise ValueError(
-                "sensor profile identifiers and source are required"
-            )
+        object.__setattr__(
+            self,
+            "provenance",
+            _profile_identity(
+                self.profile_id,
+                self.display_name,
+                self.provenance,
+                self.source_url,
+            ),
+        )
         for name in (
             "frequency_hz",
             "maximum_range_m",
@@ -155,7 +208,80 @@ class SonarProfile:
             _positive("maximum_ping_rate_hz", self.maximum_ping_rate_hz)
 
 
-SensorProfile = PressureSensorProfile | ImuSensorProfile | SonarProfile
+@dataclass(frozen=True)
+class CustomVectorSensorProfile:
+    """Metadata and bounds for an explicitly supplied numeric sensor vector."""
+
+    profile_id: str
+    display_name: str
+    channel_names: tuple[str, ...]
+    units: tuple[str, ...]
+    minimum_values: tuple[float, ...]
+    maximum_values: tuple[float, ...]
+    default_values: tuple[float, ...]
+    provenance: ParameterProvenance = ParameterProvenance.ASSUMED
+    source_url: str | None = None
+    source_retrieved: str = ""
+    kind: SensorKind = SensorKind.CUSTOM_VECTOR
+
+    def __post_init__(self) -> None:
+        if self.kind is not SensorKind.CUSTOM_VECTOR:
+            raise ValueError("custom vector profile kind must be custom_vector")
+        object.__setattr__(
+            self,
+            "provenance",
+            _profile_identity(
+                self.profile_id,
+                self.display_name,
+                self.provenance,
+                self.source_url,
+            ),
+        )
+        channel_names = tuple(str(item).strip() for item in self.channel_names)
+        units = tuple(str(item).strip() for item in self.units)
+        if not channel_names or len(channel_names) > 64:
+            raise ValueError("custom vector must contain 1 to 64 channels")
+        if any(not item for item in channel_names):
+            raise ValueError("custom vector channel names cannot be empty")
+        if len(set(channel_names)) != len(channel_names):
+            raise ValueError("custom vector channel names must be unique")
+        if len(units) != len(channel_names) or any(not item for item in units):
+            raise ValueError(
+                "custom vector requires one nonempty unit per channel"
+            )
+        object.__setattr__(self, "channel_names", channel_names)
+        object.__setattr__(self, "units", units)
+        size = len(channel_names)
+        for name in (
+            "minimum_values",
+            "maximum_values",
+            "default_values",
+        ):
+            values = _vector(name, getattr(self, name), size)
+            object.__setattr__(
+                self, name, tuple(float(item) for item in values)
+            )
+        minimum = np.asarray(self.minimum_values)
+        maximum = np.asarray(self.maximum_values)
+        defaults = np.asarray(self.default_values)
+        if np.any(minimum >= maximum):
+            raise ValueError("custom vector minimums must be below maximums")
+        if np.any(defaults < minimum) or np.any(defaults > maximum):
+            raise ValueError("custom vector defaults must be within bounds")
+
+    @property
+    def size(self) -> int:
+        """Return the number of user-supplied value channels."""
+
+        return len(self.channel_names)
+
+
+SensorProfile = (
+    PressureSensorProfile
+    | ImuSensorProfile
+    | SonarProfile
+    | CustomVectorSensorProfile
+)
 
 
 @dataclass(frozen=True)
@@ -167,6 +293,7 @@ class MountedSensorConfig:
     position_B_m: Vector3 = (0.0, 0.0, 0.0)
     rpy_BS_deg: Vector3 = (0.0, 0.0, 0.0)
     bias: tuple[float, ...] = ()
+    supplied_value: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.sensor_id.strip():
@@ -179,6 +306,22 @@ class MountedSensorConfig:
         raw_bias = self.bias if len(self.bias) else np.zeros(self.error_size)
         bias = _vector("bias", raw_bias, self.error_size)
         object.__setattr__(self, "bias", tuple(float(item) for item in bias))
+        if isinstance(self.profile, CustomVectorSensorProfile):
+            raw_value = (
+                self.supplied_value
+                if len(self.supplied_value)
+                else self.profile.default_values
+            )
+            supplied_value = _vector(
+                "supplied_value", raw_value, self.profile.size
+            )
+            object.__setattr__(
+                self,
+                "supplied_value",
+                tuple(float(item) for item in supplied_value),
+            )
+        elif self.supplied_value:
+            raise ValueError("supplied_value requires a custom vector profile")
 
     @property
     def error_size(self) -> int:
@@ -186,6 +329,8 @@ class MountedSensorConfig:
             return 2
         if self.profile.kind is SensorKind.IMU:
             return 6
+        if isinstance(self.profile, CustomVectorSensorProfile):
+            return self.profile.size
         return 1
 
 
@@ -350,10 +495,16 @@ PROFILE_FACTORIES = {
 }
 
 
-def sensor_profile(profile_id: str) -> SensorProfile:
+def sensor_profile(
+    profile_id: str,
+    *,
+    custom_profiles: Mapping[str, SensorProfile] | None = None,
+) -> SensorProfile:
     """Resolve a stable, case-insensitive sensor profile identifier."""
 
     normalized = profile_id.strip().lower().replace("_", "-")
+    if custom_profiles is not None and normalized in custom_profiles:
+        return custom_profiles[normalized]
     try:
         return PROFILE_FACTORIES[normalized]()
     except KeyError as exc:
@@ -361,6 +512,27 @@ def sensor_profile(profile_id: str) -> SensorProfile:
         raise ValueError(
             f"unknown sensor profile {profile_id!r}; choose {choices}"
         ) from exc
+
+
+def custom_vector_measurement(
+    profile: CustomVectorSensorProfile,
+    *,
+    values: ArrayLike,
+    error: ArrayLike | None = None,
+) -> Vector:
+    """Return bounded supplied values followed by a collective valid flag."""
+
+    supplied = _vector("values", values, profile.size)
+    errors = (
+        np.zeros(profile.size)
+        if error is None
+        else _vector("error", error, profile.size)
+    )
+    measured = supplied + errors
+    minimum = np.asarray(profile.minimum_values)
+    maximum = np.asarray(profile.maximum_values)
+    valid = np.all((measured >= minimum) & (measured <= maximum))
+    return np.concatenate((np.clip(measured, minimum, maximum), [float(valid)]))
 
 
 def pressure_measurement(

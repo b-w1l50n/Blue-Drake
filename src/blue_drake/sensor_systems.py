@@ -5,11 +5,13 @@ from __future__ import annotations
 import numpy as np
 
 from blue_drake.sensors import (
+    CustomVectorSensorProfile,
     ImuSensorProfile,
     MountedSensorConfig,
     PressureSensorProfile,
     SensorKind,
     SonarProfile,
+    custom_vector_measurement,
     flat_seafloor_range,
     pressure_measurement,
     raw_imu_measurement,
@@ -214,6 +216,54 @@ class FlatSeafloorSonarSystem(_MountedSensorSystem):
         output.SetFromVector(self._measurement(context, error))
 
 
+class CustomVectorSensorSystem(LeafSystem):
+    """Expose an explicitly supplied bounded vector as a sensor-like port."""
+
+    def __init__(self, config: MountedSensorConfig) -> None:
+        if not isinstance(config.profile, CustomVectorSensorProfile):
+            raise TypeError(
+                "CustomVectorSensorSystem requires a custom vector profile"
+            )
+        super().__init__()
+        self._config = config
+        self._profile = config.profile
+        size = self._profile.size
+        self.value_input = self.DeclareVectorInputPort(
+            "supplied_value", BasicVector(size)
+        )
+        self.error_input = self.DeclareVectorInputPort(
+            "value_error", BasicVector(size)
+        )
+        self.ideal_output = self.DeclareVectorOutputPort(
+            "ideal_supplied_value_valid",
+            BasicVector(size + 1),
+            self._calc_ideal,
+        )
+        self.measurement_output = self.DeclareVectorOutputPort(
+            "supplied_value_valid",
+            BasicVector(size + 1),
+            self._calc_measurement,
+        )
+
+    def _calc_ideal(self, context, output) -> None:
+        output.SetFromVector(
+            custom_vector_measurement(
+                self._profile,
+                values=self.value_input.Eval(context),
+            )
+        )
+
+    def _calc_measurement(self, context, output) -> None:
+        error = np.asarray(self._config.bias) + self.error_input.Eval(context)
+        output.SetFromVector(
+            custom_vector_measurement(
+                self._profile,
+                values=self.value_input.Eval(context),
+                error=error,
+            )
+        )
+
+
 def add_sensor_system(
     builder,
     config: MountedSensorConfig,
@@ -227,7 +277,9 @@ def add_sensor_system(
 ):
     """Add the Drake adapter appropriate for a mounted sensor profile."""
 
-    if config.profile.kind is SensorKind.PRESSURE:
+    if config.profile.kind is SensorKind.CUSTOM_VECTOR:
+        system = CustomVectorSensorSystem(config)
+    elif config.profile.kind is SensorKind.PRESSURE:
         system = PressureSensorSystem(
             config,
             body_index,

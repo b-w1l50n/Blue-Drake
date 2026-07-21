@@ -15,7 +15,18 @@ from blue_drake.acoustics import (
     ModemProfile,
     modem_profile,
 )
-from blue_drake.sensors import MountedSensorConfig, SensorKind, sensor_profile
+from blue_drake.sensors import (
+    PROFILE_FACTORIES,
+    CustomVectorSensorProfile,
+    ImuSensorProfile,
+    MountedSensorConfig,
+    ParameterProvenance,
+    PressureSensorProfile,
+    SensorKind,
+    SensorProfile,
+    SonarProfile,
+    sensor_profile,
+)
 from blue_drake.vehicles import MarineVehicleConfig, VehicleKind, vehicle_preset
 
 Vector3 = tuple[float, float, float]
@@ -55,6 +66,38 @@ def _integer(name: str, value: Any) -> int:
     if isinstance(value, bool) or not isinstance(value, int):
         raise ValueError(f"{name} must be an integer")
     return value
+
+
+def _string_vector(name: str, value: Any) -> tuple[str, ...]:
+    if not isinstance(value, list) or not all(
+        isinstance(item, str) for item in value
+    ):
+        raise ValueError(f"{name} must be an array of strings")
+    result = tuple(item.strip() for item in value)
+    if any(not item for item in result):
+        raise ValueError(f"{name} cannot contain empty strings")
+    return result
+
+
+def _numeric_vector(name: str, value: Any) -> tuple[float, ...]:
+    if not isinstance(value, list) or not all(
+        isinstance(item, int | float) and not isinstance(item, bool)
+        for item in value
+    ):
+        raise ValueError(f"{name} must be an array of numbers")
+    result = tuple(float(item) for item in value)
+    if not result or not all(math.isfinite(item) for item in result):
+        raise ValueError(f"{name} must contain finite numbers")
+    return result
+
+
+def _number(name: str, value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise ValueError(f"{name} must be a number")
+    result = float(value)
+    if not math.isfinite(result):
+        raise ValueError(f"{name} must be finite")
+    return result
 
 
 @dataclass(frozen=True)
@@ -142,6 +185,7 @@ class MarineScenario:
     name: str
     vehicles: tuple[ScenarioVehicle, ...]
     acoustic: AcousticScenario
+    sensor_profiles: tuple[SensorProfile, ...] = ()
     duration_s: float = 10.0
     time_step_s: float = 0.005
     gravity_mps2: float = 9.81
@@ -159,6 +203,10 @@ class MarineScenario:
         vehicle_ids = [vehicle.vehicle_id for vehicle in self.vehicles]
         if len(set(vehicle_ids)) != len(vehicle_ids):
             raise ValueError("scenario vehicle IDs must be unique")
+        object.__setattr__(self, "sensor_profiles", tuple(self.sensor_profiles))
+        profile_ids = [profile.profile_id for profile in self.sensor_profiles]
+        if len(profile_ids) != len(set(profile_ids)):
+            raise ValueError("custom sensor profile IDs must be unique")
         for name in (
             "duration_s",
             "time_step_s",
@@ -227,14 +275,245 @@ def _parse_transmission(value: Any, index: int) -> AcousticTransmissionRequest:
     )
 
 
+_PROFILE_COMMON_KEYS = {
+    "id",
+    "display_name",
+    "kind",
+    "provenance",
+    "source_url",
+    "source_retrieved",
+}
+
+
+def _profile_common(data: Mapping[str, Any], context: str) -> dict[str, Any]:
+    required = {"id", "display_name", "kind"}
+    missing = required - set(data)
+    if missing:
+        raise ValueError(
+            f"missing {context} keys: " + ", ".join(sorted(missing))
+        )
+    for name in ("id", "display_name", "kind"):
+        if not isinstance(data[name], str):
+            raise ValueError(f"{context} {name} must be a string")
+    profile_id = data["id"].strip().lower().replace("_", "-")
+    if profile_id in PROFILE_FACTORIES:
+        raise ValueError(
+            f"{context} cannot override built-in profile {profile_id}"
+        )
+    try:
+        provenance = ParameterProvenance(data.get("provenance", "assumed"))
+    except ValueError as exc:
+        raise ValueError(f"{context} has unsupported provenance") from exc
+    source_url = data.get("source_url")
+    if source_url is not None and not isinstance(source_url, str):
+        raise ValueError(f"{context} source_url must be a string")
+    source_retrieved = data.get("source_retrieved", "")
+    if not isinstance(source_retrieved, str):
+        raise ValueError(f"{context} source_retrieved must be a string")
+    return {
+        "profile_id": profile_id,
+        "display_name": data["display_name"],
+        "provenance": provenance,
+        "source_url": source_url,
+        "source_retrieved": source_retrieved,
+    }
+
+
+def _parse_sensor_profile(value: Any, index: int) -> SensorProfile:
+    context = f"sensor profile {index}"
+    data = _mapping(context, value)
+    if "kind" not in data:
+        raise ValueError(f"missing {context} keys: kind")
+    try:
+        kind = SensorKind(data["kind"])
+    except ValueError as exc:
+        raise ValueError(f"{context} has unsupported kind") from exc
+    common = _profile_common(data, context)
+    if kind is SensorKind.PRESSURE:
+        specific = {
+            "maximum_pressure_Pa",
+            "approximate_depth_rating_m",
+            "nominal_depth_resolution_m",
+            "temperature_accuracy_C",
+        }
+        _reject_unknown(data, _PROFILE_COMMON_KEYS | specific, context)
+        missing = specific - set(data)
+        if missing:
+            raise ValueError(
+                f"missing {context} keys: " + ", ".join(sorted(missing))
+            )
+        return PressureSensorProfile(
+            **common,
+            maximum_pressure_Pa=_number(
+                f"{context} maximum_pressure_Pa",
+                data["maximum_pressure_Pa"],
+            ),
+            approximate_depth_rating_m=_number(
+                f"{context} approximate_depth_rating_m",
+                data["approximate_depth_rating_m"],
+            ),
+            nominal_depth_resolution_m=_number(
+                f"{context} nominal_depth_resolution_m",
+                data["nominal_depth_resolution_m"],
+            ),
+            temperature_accuracy_C=_number(
+                f"{context} temperature_accuracy_C",
+                data["temperature_accuracy_C"],
+            ),
+        )
+    if kind is SensorKind.IMU:
+        specific = {
+            "gyroscope_range_radps",
+            "accelerometer_range_mps2",
+            "gyroscope_noise_density_radps_per_sqrt_hz",
+            "accelerometer_noise_density_mps2_per_sqrt_hz",
+            "maximum_output_rate_hz",
+            "roll_pitch_accuracy_rad_rms",
+            "heading_accuracy_rad_rms",
+        }
+        _reject_unknown(data, _PROFILE_COMMON_KEYS | specific, context)
+        missing = specific - set(data)
+        if missing:
+            raise ValueError(
+                f"missing {context} keys: " + ", ".join(sorted(missing))
+            )
+        return ImuSensorProfile(
+            **common,
+            gyroscope_range_radps=_vector(
+                f"{context} gyroscope_range_radps",
+                data["gyroscope_range_radps"],
+                3,
+            ),
+            accelerometer_range_mps2=_vector(
+                f"{context} accelerometer_range_mps2",
+                data["accelerometer_range_mps2"],
+                3,
+            ),
+            gyroscope_noise_density_radps_per_sqrt_hz=_number(
+                f"{context} gyroscope_noise_density_radps_per_sqrt_hz",
+                data["gyroscope_noise_density_radps_per_sqrt_hz"],
+            ),
+            accelerometer_noise_density_mps2_per_sqrt_hz=_number(
+                f"{context} accelerometer_noise_density_mps2_per_sqrt_hz",
+                data["accelerometer_noise_density_mps2_per_sqrt_hz"],
+            ),
+            maximum_output_rate_hz=_number(
+                f"{context} maximum_output_rate_hz",
+                data["maximum_output_rate_hz"],
+            ),
+            roll_pitch_accuracy_rad_rms=_number(
+                f"{context} roll_pitch_accuracy_rad_rms",
+                data["roll_pitch_accuracy_rad_rms"],
+            ),
+            heading_accuracy_rad_rms=_number(
+                f"{context} heading_accuracy_rad_rms",
+                data["heading_accuracy_rad_rms"],
+            ),
+        )
+    if kind in {
+        SensorKind.ECHOSOUNDER,
+        SensorKind.MULTIBEAM_ECHOSOUNDER,
+        SensorKind.FORWARD_LOOKING_SONAR,
+    }:
+        required = {
+            "frequency_hz",
+            "minimum_range_m",
+            "maximum_range_m",
+            "horizontal_field_of_view_rad",
+            "vertical_field_of_view_rad",
+            "range_resolution_fraction",
+            "depth_rating_m",
+        }
+        specific = required | {"maximum_ping_rate_hz"}
+        _reject_unknown(data, _PROFILE_COMMON_KEYS | specific, context)
+        missing = required - set(data)
+        if missing:
+            raise ValueError(
+                f"missing {context} keys: " + ", ".join(sorted(missing))
+            )
+        ping_rate = data.get("maximum_ping_rate_hz")
+        return SonarProfile(
+            **common,
+            kind=kind,
+            frequency_hz=_number(
+                f"{context} frequency_hz", data["frequency_hz"]
+            ),
+            minimum_range_m=_number(
+                f"{context} minimum_range_m", data["minimum_range_m"]
+            ),
+            maximum_range_m=_number(
+                f"{context} maximum_range_m", data["maximum_range_m"]
+            ),
+            horizontal_field_of_view_rad=_number(
+                f"{context} horizontal_field_of_view_rad",
+                data["horizontal_field_of_view_rad"],
+            ),
+            vertical_field_of_view_rad=_number(
+                f"{context} vertical_field_of_view_rad",
+                data["vertical_field_of_view_rad"],
+            ),
+            range_resolution_fraction=_number(
+                f"{context} range_resolution_fraction",
+                data["range_resolution_fraction"],
+            ),
+            depth_rating_m=_number(
+                f"{context} depth_rating_m", data["depth_rating_m"]
+            ),
+            maximum_ping_rate_hz=(
+                None
+                if ping_rate is None
+                else _number(f"{context} maximum_ping_rate_hz", ping_rate)
+            ),
+        )
+    specific = {
+        "channel_names",
+        "units",
+        "minimum_values",
+        "maximum_values",
+        "default_values",
+    }
+    _reject_unknown(data, _PROFILE_COMMON_KEYS | specific, context)
+    missing = specific - set(data)
+    if missing:
+        raise ValueError(
+            f"missing {context} keys: " + ", ".join(sorted(missing))
+        )
+    return CustomVectorSensorProfile(
+        **common,
+        channel_names=_string_vector(
+            f"{context} channel_names", data["channel_names"]
+        ),
+        units=_string_vector(f"{context} units", data["units"]),
+        minimum_values=_numeric_vector(
+            f"{context} minimum_values", data["minimum_values"]
+        ),
+        maximum_values=_numeric_vector(
+            f"{context} maximum_values", data["maximum_values"]
+        ),
+        default_values=_numeric_vector(
+            f"{context} default_values", data["default_values"]
+        ),
+    )
+
+
 def _parse_sensor(
-    value: Any, vehicle_index: int, sensor_index: int
+    value: Any,
+    vehicle_index: int,
+    sensor_index: int,
+    custom_profiles: Mapping[str, SensorProfile],
 ) -> MountedSensorConfig:
     context = f"vehicle {vehicle_index} sensor {sensor_index}"
     data = _mapping(context, value)
     _reject_unknown(
         data,
-        {"id", "profile", "position_B_m", "rpy_BS_deg", "bias"},
+        {
+            "id",
+            "profile",
+            "position_B_m",
+            "rpy_BS_deg",
+            "bias",
+            "value",
+        },
         context,
     )
     missing = {"id", "profile"} - set(data)
@@ -242,11 +521,17 @@ def _parse_sensor(
         raise ValueError(
             f"missing {context} keys: " + ", ".join(sorted(missing))
         )
-    profile = sensor_profile(str(data["profile"]))
+    profile = sensor_profile(
+        str(data["profile"]), custom_profiles=custom_profiles
+    )
+    if "value" in data and not isinstance(profile, CustomVectorSensorProfile):
+        raise ValueError(f"{context} value requires a custom_vector profile")
     if profile.kind is SensorKind.PRESSURE:
         error_size = 2
     elif profile.kind is SensorKind.IMU:
         error_size = 6
+    elif profile.kind is SensorKind.CUSTOM_VECTOR:
+        error_size = profile.size
     else:
         error_size = 1
     return MountedSensorConfig(
@@ -267,10 +552,24 @@ def _parse_sensor(
             data.get("bias", (0.0,) * error_size),
             error_size,
         ),
+        supplied_value=(
+            _vector(
+                f"{context} value",
+                data["value"],
+                profile.size,
+            )
+            if isinstance(profile, CustomVectorSensorProfile)
+            and "value" in data
+            else ()
+        ),
     )
 
 
-def _parse_vehicle(value: Any, index: int) -> ScenarioVehicle:
+def _parse_vehicle(
+    value: Any,
+    index: int,
+    custom_profiles: Mapping[str, SensorProfile],
+) -> ScenarioVehicle:
     data = _mapping(f"vehicle {index}", value)
     allowed = {
         "id",
@@ -322,7 +621,7 @@ def _parse_vehicle(value: Any, index: int) -> ScenarioVehicle:
             2,
         ),
         sensors=tuple(
-            _parse_sensor(sensor, index, sensor_index)
+            _parse_sensor(sensor, index, sensor_index, custom_profiles)
             for sensor_index, sensor in enumerate(sensors_raw, start=1)
         ),
     )
@@ -344,6 +643,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
         "water_temperature_C",
         "seafloor_z_W_m",
         "world_extent_m",
+        "sensor_profiles",
         "network",
         "vehicles",
     }
@@ -351,6 +651,18 @@ def load_scenario(path: str | Path) -> MarineScenario:
     vehicles_raw = raw.get("vehicles")
     if not isinstance(vehicles_raw, list):
         raise ValueError("scenario vehicles must be an array of tables")
+    profiles_raw = raw.get("sensor_profiles", [])
+    if not isinstance(profiles_raw, list):
+        raise ValueError("sensor_profiles must be an array of tables")
+    parsed_profiles = tuple(
+        _parse_sensor_profile(value, index)
+        for index, value in enumerate(profiles_raw, start=1)
+    )
+    custom_profiles = {
+        profile.profile_id: profile for profile in parsed_profiles
+    }
+    if len(custom_profiles) != len(parsed_profiles):
+        raise ValueError("custom sensor profile IDs must be unique")
 
     network = _mapping("network", raw.get("network"))
     _reject_unknown(
@@ -377,10 +689,11 @@ def load_scenario(path: str | Path) -> MarineScenario:
     return MarineScenario(
         name=str(raw.get("name", source.stem)),
         vehicles=tuple(
-            _parse_vehicle(value, index)
+            _parse_vehicle(value, index, custom_profiles)
             for index, value in enumerate(vehicles_raw, start=1)
         ),
         acoustic=acoustic,
+        sensor_profiles=parsed_profiles,
         duration_s=float(raw.get("duration_s", 10.0)),
         time_step_s=float(raw.get("time_step_s", 0.005)),
         gravity_mps2=float(raw.get("gravity_mps2", 9.81)),

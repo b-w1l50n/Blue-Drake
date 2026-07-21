@@ -14,7 +14,11 @@ from blue_drake.drake_systems import (
     MarineHydrodynamicForceSystem,
     SpatialForceConcatenator,
 )
-from blue_drake.sensor_systems import RawImuSensorSystem, add_sensor_system
+from blue_drake.sensor_systems import (
+    CustomVectorSensorSystem,
+    RawImuSensorSystem,
+    add_sensor_system,
+)
 from blue_drake.sensors import MountedSensorConfig
 from blue_drake.vehicles import MarineVehicleConfig
 
@@ -321,10 +325,11 @@ def build_marine_fleet_diagram(
             sensor_system.set_name(
                 f"{vehicle_id}_{sensor_config.sensor_id}_sensor"
             )
-            builder.Connect(
-                plant.get_body_poses_output_port(),
-                sensor_system.body_poses_input,
-            )
+            if not isinstance(sensor_system, CustomVectorSensorSystem):
+                builder.Connect(
+                    plant.get_body_poses_output_port(),
+                    sensor_system.body_poses_input,
+                )
             if isinstance(sensor_system, RawImuSensorSystem):
                 builder.Connect(
                     plant.get_body_spatial_velocities_output_port(),
@@ -335,6 +340,11 @@ def build_marine_fleet_diagram(
                     sensor_system.body_accelerations_input,
                 )
             prefix = f"{vehicle_id}_{sensor_config.sensor_id}"
+            if isinstance(sensor_system, CustomVectorSensorSystem):
+                builder.ExportInput(
+                    sensor_system.value_input,
+                    f"{prefix}_value",
+                )
             builder.ExportInput(sensor_system.error_input, f"{prefix}_error")
             builder.ExportOutput(sensor_system.ideal_output, f"{prefix}_ideal")
             builder.ExportOutput(

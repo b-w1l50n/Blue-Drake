@@ -48,6 +48,11 @@ explicit error input. This makes deterministic replay the default and keeps
 random source selection at the application boundary. See
 [sensors](sensors.md).
 
+Custom physical profiles alter only a validated operating envelope and reuse
+those same adapters. A `custom_vector` is a separate source adapter: it consumes
+an explicit value port rather than plant truth and exposes bounds and metadata
+without claiming physical fidelity. See [custom sensors](custom_sensors.md).
+
 Marine force calculations also contain the reviewable effective-inertia,
 glider-wing, and surface-restoring foundations described in
 [marine dynamics](dynamics.md). They remain pure calculations; Drake adapters

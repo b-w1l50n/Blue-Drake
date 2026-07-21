@@ -5,6 +5,10 @@ from pathlib import Path
 import pytest
 
 from blue_drake.scenario import load_scenario
+from blue_drake.sensors import (
+    CustomVectorSensorProfile,
+    PressureSensorProfile,
+)
 from blue_drake.vehicles import VehicleKind
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +41,17 @@ def test_mixed_scenario_loads_all_public_vehicle_categories() -> None:
         if vehicle.vehicle_id == "glider_1"
     )
     assert glider.glider_command == (-2.0, 0.0)
+
+
+def test_custom_sensor_scenario_resolves_profiles_and_values() -> None:
+    scenario = load_scenario(REPO_ROOT / "scenarios" / "custom_sensors.toml")
+    assert len(scenario.sensor_profiles) == 2
+    assert isinstance(scenario.sensor_profiles[0], CustomVectorSensorProfile)
+    assert isinstance(scenario.sensor_profiles[1], PressureSensorProfile)
+    water_quality = scenario.vehicles[0].sensors[0]
+    assert water_quality.profile.channel_names == ("salinity", "turbidity")
+    assert water_quality.supplied_value == (34.8, 1.2)
+    assert water_quality.bias == (0.1, 0.0)
 
 
 def test_unknown_scenario_keys_are_rejected(tmp_path: Path) -> None:
@@ -108,6 +123,125 @@ imaginary_setting = true
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="unknown vehicle 1 sensor 1 keys"):
+        load_scenario(path)
+
+
+def test_custom_profile_cannot_override_builtin_profile(tmp_path: Path) -> None:
+    path = tmp_path / "override.toml"
+    path.write_text(
+        """
+name = "override"
+[[sensor_profiles]]
+id = "blue-robotics-bar30"
+display_name = "Not really a Bar30"
+kind = "pressure"
+maximum_pressure_Pa = 1
+approximate_depth_rating_m = 1
+nominal_depth_resolution_m = 1
+temperature_accuracy_C = 1
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -1]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="cannot override built-in"):
+        load_scenario(path)
+
+
+def test_sourced_custom_profile_requires_source_url(tmp_path: Path) -> None:
+    path = tmp_path / "missing_source.toml"
+    path.write_text(
+        """
+name = "missing-source"
+[[sensor_profiles]]
+id = "lab-pressure"
+display_name = "Lab pressure"
+kind = "pressure"
+provenance = "measured"
+maximum_pressure_Pa = 200000
+approximate_depth_rating_m = 10
+nominal_depth_resolution_m = 0.01
+temperature_accuracy_C = 1
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -1]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="require a source_url"):
+        load_scenario(path)
+
+
+def test_custom_imu_and_sonar_profiles_parse_in_si_units(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "custom_physical.toml"
+    path.write_text(
+        """
+name = "custom-physical"
+[[sensor_profiles]]
+id = "lab-imu"
+display_name = "Lab IMU"
+kind = "imu"
+gyroscope_range_radps = [10, 10, 10]
+accelerometer_range_mps2 = [100, 100, 100]
+gyroscope_noise_density_radps_per_sqrt_hz = 0.001
+accelerometer_noise_density_mps2_per_sqrt_hz = 0.01
+maximum_output_rate_hz = 100
+roll_pitch_accuracy_rad_rms = 0.01
+heading_accuracy_rad_rms = 0.02
+[[sensor_profiles]]
+id = "lab-altimeter"
+display_name = "Lab Altimeter"
+kind = "echosounder"
+frequency_hz = 200000
+minimum_range_m = 0.2
+maximum_range_m = 75
+horizontal_field_of_view_rad = 0.4
+vertical_field_of_view_rad = 0.4
+range_resolution_fraction = 0.01
+depth_rating_m = 200
+maximum_ping_rate_hz = 10
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -2]
+[[vehicles.sensors]]
+id = "imu"
+profile = "lab-imu"
+[[vehicles.sensors]]
+id = "altimeter"
+profile = "lab-altimeter"
+rpy_BS_deg = [0, 90, 0]
+""",
+        encoding="utf-8",
+    )
+    scenario = load_scenario(path)
+    assert scenario.sensor_profiles[0].kind.value == "imu"
+    assert scenario.sensor_profiles[1].kind.value == "echosounder"
+    assert scenario.vehicles[0].sensors[0].profile.profile_id == "lab-imu"
+
+
+def test_value_is_reserved_for_custom_vector_sensors(tmp_path: Path) -> None:
+    path = tmp_path / "physical_value.toml"
+    path.write_text(
+        """
+name = "physical-value"
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -1]
+[[vehicles.sensors]]
+id = "depth"
+profile = "blue-robotics-bar30"
+value = [123]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="requires a custom_vector"):
         load_scenario(path)
 
 

@@ -8,7 +8,9 @@ from blue_drake.actuators import (
     allocate_wrench,
 )
 from blue_drake.sensors import (
+    CustomVectorSensorProfile,
     MountedSensorConfig,
+    ParameterProvenance,
     SensorKind,
     sensor_profile,
 )
@@ -30,7 +32,9 @@ __all__ = [
     "GliderControlConfig",
     "GliderWingConfig",
     "MarineVehicleConfig",
+    "CustomVectorSensorProfile",
     "MountedSensorConfig",
+    "ParameterProvenance",
     "SensorKind",
     "VehicleKind",
     "WrenchAllocation",

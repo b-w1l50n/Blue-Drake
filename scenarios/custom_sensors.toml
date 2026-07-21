@@ -1,0 +1,41 @@
+name = "custom-sensor-demo"
+duration_s = 1.0
+time_step_s = 0.005
+seafloor_z_W_m = -20.0
+
+[[sensor_profiles]]
+id = "student-water-quality"
+display_name = "Student Water Quality Package"
+kind = "custom_vector"
+provenance = "assumed"
+channel_names = ["salinity", "turbidity"]
+units = ["PSU", "NTU"]
+minimum_values = [0.0, 0.0]
+maximum_values = [50.0, 100.0]
+default_values = [35.0, 2.0]
+
+[[sensor_profiles]]
+id = "student-pressure"
+display_name = "Student Pressure Transducer"
+kind = "pressure"
+provenance = "assumed"
+maximum_pressure_Pa = 2000000.0
+approximate_depth_rating_m = 190.0
+nominal_depth_resolution_m = 0.01
+temperature_accuracy_C = 2.0
+
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0.0, 0.0, -2.0]
+
+[[vehicles.sensors]]
+id = "water_quality"
+profile = "student-water-quality"
+value = [34.8, 1.2]
+bias = [0.1, 0.0]
+
+[[vehicles.sensors]]
+id = "student_depth"
+profile = "student-pressure"
+position_B_m = [0.0, 0.0, 0.1]

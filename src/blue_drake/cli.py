@@ -10,6 +10,7 @@ import numpy as np
 
 from blue_drake.acoustics import schedule_transmissions
 from blue_drake.scenario import load_scenario
+from blue_drake.sensors import CustomVectorSensorProfile, SensorKind
 
 os.environ.setdefault(
     "MPLCONFIGDIR",
@@ -88,6 +89,10 @@ def main() -> None:
                 f"{configured.vehicle_id}_glider_command"
             ).FixValue(context, configured.glider_command)
         for sensor in configured.sensors:
+            if sensor.profile.kind is SensorKind.CUSTOM_VECTOR:
+                model.diagram.GetInputPort(
+                    f"{configured.vehicle_id}_{sensor.sensor_id}_value"
+                ).FixValue(context, sensor.supplied_value)
             model.diagram.GetInputPort(
                 f"{configured.vehicle_id}_{sensor.sensor_id}_error"
             ).FixValue(context, np.zeros(sensor.error_size))
@@ -100,6 +105,12 @@ def main() -> None:
         f"Modem: {scenario.acoustic.modem.display_name} "
         f"({scenario.acoustic.modem.validation_status})"
     )
+    if scenario.sensor_profiles:
+        print("Custom sensor profiles:")
+        for profile in scenario.sensor_profiles:
+            print(
+                f"  {profile.profile_id}: {profile.kind} ({profile.provenance})"
+            )
     events = schedule_transmissions(
         scenario.acoustic.modem,
         node_positions_W_m={
@@ -129,7 +140,25 @@ def main() -> None:
             measurement = model.diagram.GetOutputPort(
                 f"{prefix}_measurement"
             ).Eval(context)
-            print(f"  {sensor.config.sensor_id}: {np.round(measurement, 4)}")
+            if isinstance(sensor.config.profile, CustomVectorSensorProfile):
+                profile = sensor.config.profile
+                fields = ", ".join(
+                    f"{name}={value:.4g} {unit}"
+                    for name, unit, value in zip(
+                        profile.channel_names,
+                        profile.units,
+                        measurement[:-1],
+                        strict=True,
+                    )
+                )
+                print(
+                    f"  {sensor.config.sensor_id}: {fields}, "
+                    f"valid={bool(measurement[-1])}"
+                )
+            else:
+                print(
+                    f"  {sensor.config.sensor_id}: {np.round(measurement, 4)}"
+                )
 
 
 if __name__ == "__main__":

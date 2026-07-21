@@ -6,6 +6,7 @@ import pytest
 from blue_drake.actuators import uuv_actuator_preset
 from blue_drake.drake_systems import GliderControlSystem, MarineActuatorSystem
 from blue_drake.sensors import (
+    CustomVectorSensorProfile,
     MountedSensorConfig,
     bar30_profile,
     ping_sonar_profile,
@@ -80,6 +81,55 @@ def test_marine_world_rejects_invalid_extent() -> None:
         configure_meshcat_marine_world(
             _RecordingMeshcat(), seafloor_z_W_m=-20.0, world_extent_m=0.0
         )
+
+
+def test_custom_vector_sensor_exports_supplied_value_port() -> None:
+    from pydrake.systems.analysis import Simulator
+
+    profile = CustomVectorSensorProfile(
+        profile_id="water-quality",
+        display_name="Water Quality",
+        channel_names=("salinity", "turbidity"),
+        units=("PSU", "NTU"),
+        minimum_values=(0.0, 0.0),
+        maximum_values=(50.0, 100.0),
+        default_values=(35.0, 2.0),
+    )
+    sensor = MountedSensorConfig(
+        "water_quality",
+        profile,
+        bias=(0.1, 0.0),
+        supplied_value=(34.8, 1.2),
+    )
+    model = build_marine_fleet_diagram(
+        {"rov_1": rov_preset()}, sensors={"rov_1": (sensor,)}
+    )
+    assert model.diagram.HasInputPort("rov_1_water_quality_value")
+    simulator = Simulator(model.diagram)
+    context = simulator.get_mutable_context()
+    model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
+        context, np.zeros(3)
+    )
+    model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
+        context, np.zeros(6)
+    )
+    model.diagram.GetInputPort("rov_1_wrench_command_B").FixValue(
+        context, np.zeros(6)
+    )
+    model.diagram.GetInputPort("rov_1_water_quality_value").FixValue(
+        context, sensor.supplied_value
+    )
+    model.diagram.GetInputPort("rov_1_water_quality_error").FixValue(
+        context, np.zeros(2)
+    )
+    ideal = model.diagram.GetOutputPort("rov_1_water_quality_ideal").Eval(
+        context
+    )
+    measured = model.diagram.GetOutputPort(
+        "rov_1_water_quality_measurement"
+    ).Eval(context)
+    assert ideal == pytest.approx([34.8, 1.2, 1.0])
+    assert measured == pytest.approx([34.9, 1.2, 1.0])
 
 
 def test_mixed_surface_and_subsea_diagram_builds_and_advances() -> None:

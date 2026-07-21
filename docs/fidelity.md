@@ -28,6 +28,8 @@ a physical model.
 | Cerulean sonars | Profiles plus center ray | Point clouds, imagery, onboard processing |
 | Acoustic events | Stationary range, timing, collision, and half-duplex diagnostics | BER/PER, multipath, Doppler, queues, moving links |
 | Meshcat marine world | Water plane and flat seafloor context | Bathymetry, waves, shoreline, water optics |
+| Custom physical profiles | User-defined envelope with existing pressure, raw-IMU, or center-ray physics | Automatic calibration, validation of user sources |
+| Custom vector sensors | Explicit bounded value/error ports with channel metadata | Physical generation, unit conversion, timing, device protocols |
 
 ## Validation rule
 
