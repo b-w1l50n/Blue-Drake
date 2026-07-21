@@ -6,6 +6,15 @@ and analytical benchmark output.
 
 ## Unreleased
 
+No changes yet.
+
+## 1.0.0rc1 - 2026-07-21
+
+First public-contract release candidate. It is aimed at affordable, repeatable
+sensor and vehicle experiments for students, plus quick plausibility checks for
+professionals. It is not a substitute for hardware qualification, controlled
+water testing, or field trials.
+
 - Apply one bounded emergence envelope to all USV water-dependent loads,
   eliminating water drag, restoring torque, and added inertia in air.
 - Add machine-readable benchmark subjects, evidence types, provenance and

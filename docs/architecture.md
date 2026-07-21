@@ -90,9 +90,9 @@ state, preserving a hard boundary between generic algorithms and autonomy.
 
 Configuration values are immutable. Public names carry units and frame suffixes
 where ambiguity is possible. World-frame names end in `_W`; body-frame names end
-in `_B`. Breaking changes are acceptable before version 1.0 but must be noted in
-release documentation. Scenario, artifact, and benchmark formats carry their
-own integer schema versions; see [compatibility](compatibility.md).
+in `_B`. Breaking corrections during the 1.0 release-candidate series require
+explicit review and release notes. Scenario, artifact, and benchmark formats
+carry their own integer schema versions; see [compatibility](compatibility.md).
 
 The current Python `LeafSystem` adapters are double-only and do not declare
 scalar conversion to AutoDiff or symbolic systems. Pure configuration and

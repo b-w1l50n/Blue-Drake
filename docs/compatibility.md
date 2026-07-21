@@ -2,9 +2,9 @@
 
 ## Supported release configuration
 
-Blue Drake 0.1 supports CPython 3.12 through 3.14. Its CI release gate runs all
-three versions on Ubuntu 24.04 with Drake 1.54.0. This matches Drake's currently
-documented Ubuntu 24.04 pip configurations:
+Blue Drake 1.0.0rc1 supports CPython 3.12 through 3.14. Its CI release gate runs
+all three versions on Ubuntu 24.04 with Drake 1.54.0. This matches Drake's
+currently documented Ubuntu 24.04 pip configurations:
 
 - [Drake supported configurations](https://drake.mit.edu/installation.html)
 - [Drake 1.54.0 on PyPI](https://pypi.org/project/drake/1.54.0/)
@@ -37,10 +37,11 @@ and [1.46.0 release notes](https://drake.mit.edu/release_notes/v1.46.0.html).
 
 ## Package and API versions
 
-Blue Drake uses semantic package versions. While the package major version is
-zero, public Python APIs may change between minor releases; breaking changes
-must be called out in the changelog and should use a deprecation period when
-practical.
+Blue Drake uses semantic package versions. The 1.0 release-candidate series
+freezes the documented public contract for final 1.0 qualification. Any
+necessary breaking correction between release candidates must be called out in
+the changelog; after final 1.0, breaking public-API changes require a new major
+version and should use a deprecation period when practical.
 
 Three data contracts are versioned independently:
 
@@ -53,5 +54,5 @@ new schema version, strict parser and serialization tests, documentation, and a
 migration example. Adding optional fields with stable defaults may remain within
 the existing schema when old files retain identical meaning.
 
-Drake systems in 0.1 are double-only. AutoDiff and symbolic scalar conversion
+Drake systems in 1.0 are double-only. AutoDiff and symbolic scalar conversion
 are not supported or implied.

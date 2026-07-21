@@ -28,7 +28,7 @@ The intended public vehicle presets are:
 - underwater gliders, and
 - uncrewed surface vehicles (USVs).
 
-Blue Drake will provide marine dynamics, actuators, hardware-informed sensors,
+Blue Drake provides marine dynamics, actuators, hardware-informed sensors,
 acoustic communications, generic control and path-planning primitives, scenario
 files, and Meshcat visualization. It will not contain Erinyes mission autonomy,
 C2 workflows, HIL orchestration, ROS application logic, or learned-model
@@ -39,9 +39,9 @@ inertial sensors, and a DiveNET Sealink acoustic modem profile. Product names
 identify simulation targets only; their manufacturers do not sponsor or endorse
 this project.
 
-## Version 0.1 release candidate
+## Version 1.0 release candidate
 
-The initial release candidate combines experiment tooling and generic geometric
+The 1.0 release candidate combines experiment tooling and generic geometric
 planning with acoustic, dynamics, actuation, and sensor foundations:
 
 - validated scenario and vehicle configuration types,
@@ -170,6 +170,7 @@ read [compatibility and versioning](docs/compatibility.md),
 [the generic reference vehicle cases](docs/reference_cases.md),
 [the 1.0 release contract](docs/release_contract.md),
 [the public API policy](docs/public_api.md),
+[the release procedure](docs/releasing.md),
 [the changelog](CHANGELOG.md), and [contributing](CONTRIBUTING.md).
 
 ## License

@@ -55,6 +55,8 @@ Generic planners must remain independent of controllers and mission state.
 Compatibility changes must update `docs/compatibility.md`. A release must build
 an sdist and wheel, validate both with Twine, install the wheel into a clean
 environment, and smoke-test version, scenario validation, and benchmarks.
+The complete candidate and tag sequence is in the
+[release procedure](docs/releasing.md).
 
 ## Public boundary
 
