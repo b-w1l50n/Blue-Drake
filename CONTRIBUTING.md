@@ -3,6 +3,10 @@
 Blue Drake follows the engineering spirit of Drake's contribution process while
 remaining an independent downstream project.
 
+The acceptance boundary for the current release is maintained in the
+[1.0 release contract](docs/release_contract.md), and compatibility commitments
+are listed in the [public API policy](docs/public_api.md).
+
 ## Before coding
 
 For a change spanning multiple pull requests, open a design issue first. State:

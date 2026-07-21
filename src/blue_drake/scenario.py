@@ -143,7 +143,7 @@ class ScenarioVehicle:
             raise ValueError("subsea vehicles must start below the waterline")
         if self.config.actuator_bank is None and any(self.wrench_command_B):
             raise ValueError(
-                f"{self.config.kind} preset has no milestone-2 actuator model"
+                f"{self.config.kind} preset does not define fixed actuators"
             )
         if self.config.glider_control is None and any(self.glider_command):
             raise ValueError("glider_command requires a glider vehicle")

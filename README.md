@@ -151,6 +151,8 @@ should also read [sensor semantics and provenance](docs/sensors.md),
 [generic grid path planning](docs/planning.md), and
 [analytical validation evidence](docs/validation.md). Release users should also
 read [compatibility and versioning](docs/compatibility.md),
+[the 1.0 release contract](docs/release_contract.md),
+[the public API policy](docs/public_api.md),
 [the changelog](CHANGELOG.md), and [contributing](CONTRIBUTING.md).
 
 ## License

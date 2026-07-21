@@ -142,7 +142,7 @@ wrench_command_B = [0, 0, 0, 1, 0, 0]
 """,
         encoding="utf-8",
     )
-    with pytest.raises(ValueError, match="no milestone-2 actuator model"):
+    with pytest.raises(ValueError, match="does not define fixed actuators"):
         load_scenario(path)
 
 

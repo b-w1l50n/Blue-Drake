@@ -19,6 +19,7 @@ from blue_drake.sensors import (
 from blue_drake.vehicles import (
     GliderControlConfig,
     GliderWingConfig,
+    HydrostaticMode,
     MarineVehicleConfig,
     VehicleKind,
     glider_preset,
@@ -35,6 +36,7 @@ __all__ = [
     "GliderControlConfig",
     "GliderWingConfig",
     "GridPath",
+    "HydrostaticMode",
     "MarineVehicleConfig",
     "MarineGrid",
     "MountedSensorConfig",
