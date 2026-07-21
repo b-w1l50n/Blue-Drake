@@ -17,7 +17,7 @@ from blue_drake._version import __version__
 from blue_drake.acoustics import schedule_transmissions
 from blue_drake.inspection import catalog_summary, scenario_summary
 from blue_drake.scenario import MarineScenario, load_scenario
-from blue_drake.sensors import CustomVectorSensorProfile, SensorKind
+from blue_drake.sensors import CustomVectorSensorProfile
 
 os.environ.setdefault(
     "MPLCONFIGDIR",
@@ -182,50 +182,6 @@ def _print_benchmark(report: dict) -> None:
         )
 
 
-def _configure_context(model, scenario: MarineScenario, context) -> object:
-    from pydrake.math import RigidTransform, RollPitchYaw
-
-    plant_context = model.plant.GetMyMutableContextFromRoot(context)
-    for configured in scenario.vehicles:
-        vehicle = model.vehicle(configured.vehicle_id)
-        model.plant.SetFreeBodyPose(
-            plant_context,
-            vehicle.body,
-            RigidTransform(
-                RollPitchYaw(
-                    np.deg2rad(configured.initial_rpy_deg)
-                ).ToRotationMatrix(),
-                configured.initial_position_W_m,
-            ),
-        )
-        model.diagram.GetInputPort(
-            f"{configured.vehicle_id}_water_current_W_mps"
-        ).FixValue(context, configured.water_current_W_mps)
-        model.diagram.GetInputPort(
-            f"{configured.vehicle_id}_wind_velocity_W_mps"
-        ).FixValue(context, configured.wind_velocity_W_mps)
-        model.diagram.GetInputPort(
-            f"{configured.vehicle_id}_applied_wrench_B"
-        ).FixValue(context, configured.applied_wrench_B)
-        if configured.config.actuator_bank is not None:
-            model.diagram.GetInputPort(
-                f"{configured.vehicle_id}_wrench_command_B"
-            ).FixValue(context, configured.wrench_command_B)
-        if configured.config.glider_control is not None:
-            model.diagram.GetInputPort(
-                f"{configured.vehicle_id}_glider_command"
-            ).FixValue(context, configured.glider_command)
-        for sensor in configured.sensors:
-            if sensor.profile.kind is SensorKind.CUSTOM_VECTOR:
-                model.diagram.GetInputPort(
-                    f"{configured.vehicle_id}_{sensor.sensor_id}_value"
-                ).FixValue(context, sensor.supplied_value)
-            model.diagram.GetInputPort(
-                f"{configured.vehicle_id}_{sensor.sensor_id}_error"
-            ).FixValue(context, np.zeros(sensor.error_size))
-    return plant_context
-
-
 def _print_initial_configuration(scenario: MarineScenario) -> None:
     print(f"Blue Drake scenario: {scenario.name}")
     print(
@@ -293,7 +249,10 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
     from pydrake.systems.analysis import Simulator
 
     from blue_drake.run_artifacts import write_run_artifacts
-    from blue_drake.simulation import build_marine_fleet_diagram
+    from blue_drake.simulation import (
+        build_marine_scenario_diagram,
+        configure_scenario_context,
+    )
 
     if args.output_dir is not None and Path(args.output_dir).exists():
         raise FileExistsError(
@@ -310,26 +269,14 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
         if args.output_dir is None
         else (args.log_period or scenario.time_step_s)
     )
-    model = build_marine_fleet_diagram(
-        {vehicle.vehicle_id: vehicle.config for vehicle in scenario.vehicles},
-        sensors={
-            vehicle.vehicle_id: vehicle.sensors for vehicle in scenario.vehicles
-        },
-        time_step_s=scenario.time_step_s,
-        water_density_kg_m3=scenario.water_density_kg_m3,
-        air_density_kg_m3=scenario.air_density_kg_m3,
-        gravity_mps2=scenario.gravity_mps2,
-        surface_pressure_Pa=scenario.surface_pressure_Pa,
-        water_temperature_C=scenario.water_temperature_C,
-        air_temperature_C=scenario.air_temperature_C,
-        seafloor_z_W_m=scenario.seafloor_z_W_m,
-        world_extent_m=scenario.world_extent_m,
+    model = build_marine_scenario_diagram(
+        scenario,
         logging_period_s=logging_period_s,
         meshcat=meshcat,
     )
     simulator = Simulator(model.diagram)
     context = simulator.get_mutable_context()
-    plant_context = _configure_context(model, scenario, context)
+    plant_context = configure_scenario_context(model, scenario, context)
     duration_s = args.duration or scenario.duration_s
     simulator.set_target_realtime_rate(args.realtime_rate)
     simulator.Initialize()

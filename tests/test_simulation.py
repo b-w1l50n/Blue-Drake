@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pytest
 
 from blue_drake.actuators import uuv_actuator_preset
 from blue_drake.drake_systems import GliderControlSystem, MarineActuatorSystem
+from blue_drake.scenario import load_scenario
 from blue_drake.sensors import (
     CustomVectorSensorProfile,
     MountedSensorConfig,
@@ -14,7 +17,9 @@ from blue_drake.sensors import (
 )
 from blue_drake.simulation import (
     build_marine_fleet_diagram,
+    build_marine_scenario_diagram,
     configure_meshcat_marine_world,
+    configure_scenario_context,
 )
 from blue_drake.vehicles import (
     glider_preset,
@@ -84,6 +89,28 @@ def test_marine_world_rejects_invalid_extent() -> None:
         configure_meshcat_marine_world(
             _RecordingMeshcat(), seafloor_z_W_m=-20.0, world_extent_m=0.0
         )
+
+
+def test_scenario_build_and_context_configuration_are_public() -> None:
+    from pydrake.systems.analysis import Simulator
+
+    scenario = load_scenario(
+        Path(__file__).resolve().parents[1] / "scenarios" / "mixed_marine.toml"
+    )
+    model = build_marine_scenario_diagram(scenario)
+    simulator = Simulator(model.diagram)
+    context = simulator.get_mutable_context()
+    plant_context = configure_scenario_context(model, scenario, context)
+
+    for configured in scenario.vehicles:
+        pose = model.vehicle(configured.vehicle_id).body.EvalPoseInWorld(
+            plant_context
+        )
+        assert pose.translation() == pytest.approx(
+            configured.initial_position_W_m
+        )
+    simulator.Initialize()
+    simulator.AdvanceTo(0.01)
 
 
 def test_visualization_receives_explicit_plant_and_scene_graph(

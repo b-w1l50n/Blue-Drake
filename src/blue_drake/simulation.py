@@ -15,6 +15,7 @@ from blue_drake.drake_systems import (
     SpatialForceConcatenator,
 )
 from blue_drake.identifiers import validate_identifier
+from blue_drake.scenario import MarineScenario
 from blue_drake.sensor_systems import (
     CustomVectorSensorSystem,
     RawImuSensorSystem,
@@ -25,7 +26,7 @@ from blue_drake.vehicles import MarineVehicleConfig
 
 try:
     from pydrake.geometry import Box, Rgba
-    from pydrake.math import RigidTransform
+    from pydrake.math import RigidTransform, RollPitchYaw
     from pydrake.multibody.plant import (
         AddMultibodyPlantSceneGraph,
         CoulombFriction,
@@ -213,6 +214,97 @@ def configure_meshcat_marine_world(
         seafloor_path,
         RigidTransform([0.0, 0.0, seafloor_z_W_m - 0.05]),
     )
+
+
+def build_marine_scenario_diagram(
+    scenario: MarineScenario,
+    *,
+    logging_period_s: float | None = None,
+    meshcat=None,
+) -> MarineFleetModel:
+    """Build a fleet diagram directly from a validated scenario."""
+
+    return build_marine_fleet_diagram(
+        {vehicle.vehicle_id: vehicle.config for vehicle in scenario.vehicles},
+        sensors={
+            vehicle.vehicle_id: vehicle.sensors for vehicle in scenario.vehicles
+        },
+        time_step_s=scenario.time_step_s,
+        water_density_kg_m3=scenario.water_density_kg_m3,
+        air_density_kg_m3=scenario.air_density_kg_m3,
+        gravity_mps2=scenario.gravity_mps2,
+        surface_pressure_Pa=scenario.surface_pressure_Pa,
+        water_temperature_C=scenario.water_temperature_C,
+        air_temperature_C=scenario.air_temperature_C,
+        seafloor_z_W_m=scenario.seafloor_z_W_m,
+        world_extent_m=scenario.world_extent_m,
+        logging_period_s=logging_period_s,
+        meshcat=meshcat,
+    )
+
+
+def configure_scenario_context(
+    model: MarineFleetModel,
+    scenario: MarineScenario,
+    context,
+):
+    """Apply initial poses and deterministic scenario inputs to a context."""
+
+    model_ids = {vehicle.vehicle_id for vehicle in model.vehicles}
+    scenario_ids = {vehicle.vehicle_id for vehicle in scenario.vehicles}
+    if model_ids != scenario_ids:
+        raise ValueError("model and scenario vehicle IDs must match exactly")
+    plant_context = model.plant.GetMyMutableContextFromRoot(context)
+    for configured in scenario.vehicles:
+        vehicle = model.vehicle(configured.vehicle_id)
+        model_sensor_ids = {
+            sensor.config.sensor_id for sensor in vehicle.sensors
+        }
+        scenario_sensor_ids = {
+            sensor.sensor_id for sensor in configured.sensors
+        }
+        if model_sensor_ids != scenario_sensor_ids:
+            raise ValueError(
+                f"model and scenario sensor IDs for {configured.vehicle_id} "
+                "must match exactly"
+            )
+        model.plant.SetFreeBodyPose(
+            plant_context,
+            vehicle.body,
+            RigidTransform(
+                RollPitchYaw(
+                    np.deg2rad(configured.initial_rpy_deg)
+                ).ToRotationMatrix(),
+                configured.initial_position_W_m,
+            ),
+        )
+        model.diagram.GetInputPort(
+            f"{configured.vehicle_id}_water_current_W_mps"
+        ).FixValue(context, configured.water_current_W_mps)
+        model.diagram.GetInputPort(
+            f"{configured.vehicle_id}_wind_velocity_W_mps"
+        ).FixValue(context, configured.wind_velocity_W_mps)
+        model.diagram.GetInputPort(
+            f"{configured.vehicle_id}_applied_wrench_B"
+        ).FixValue(context, configured.applied_wrench_B)
+        if configured.config.actuator_bank is not None:
+            model.diagram.GetInputPort(
+                f"{configured.vehicle_id}_wrench_command_B"
+            ).FixValue(context, configured.wrench_command_B)
+        if configured.config.glider_control is not None:
+            model.diagram.GetInputPort(
+                f"{configured.vehicle_id}_glider_command"
+            ).FixValue(context, configured.glider_command)
+        for sensor in configured.sensors:
+            prefix = f"{configured.vehicle_id}_{sensor.sensor_id}"
+            if sensor.profile.kind is SensorKind.CUSTOM_VECTOR:
+                model.diagram.GetInputPort(f"{prefix}_value").FixValue(
+                    context, sensor.supplied_value
+                )
+            model.diagram.GetInputPort(f"{prefix}_error").FixValue(
+                context, np.zeros(sensor.error_size)
+            )
+    return plant_context
 
 
 def build_marine_fleet_diagram(

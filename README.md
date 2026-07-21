@@ -136,8 +136,11 @@ Validate or inspect a scenario without launching Drake:
 .venv/bin/blue-drake benchmark --json
 ```
 
-The library API also exposes `build_marine_fleet_diagram()` so Drake users can
-connect their own controllers, planners, loggers, and analysis systems.
+The library API exposes `build_marine_fleet_diagram()` for custom composition,
+plus `build_marine_scenario_diagram()` and `configure_scenario_context()` for
+running parsed scenarios from Python. Drake users can connect their own
+controllers, planners, loggers, and analysis systems without depending on CLI
+internals.
 
 ## Coordinates and units
 

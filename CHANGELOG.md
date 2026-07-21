@@ -16,6 +16,8 @@ and analytical benchmark output.
   manufacturing a sonar target outside the true geometric envelope.
 - Record software versions in artifact schema 2, verify byte-identical repeated
   runs, and report expected runtime failures without Python tracebacks.
+- Add supported scenario-to-diagram and context-configuration Python APIs so
+  library users do not depend on CLI internals.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface

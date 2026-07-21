@@ -13,8 +13,9 @@ line, subject to the deprecation policy below.
 The following module entry points are also supported:
 
 - `blue_drake.scenario.load_scenario()` and the scenario configuration types;
-- `blue_drake.simulation.build_marine_fleet_diagram()` and its returned model
-  accessors;
+- `blue_drake.simulation.build_marine_fleet_diagram()`,
+  `build_marine_scenario_diagram()`, `configure_scenario_context()`, and the
+  returned model accessors;
 - `blue_drake.hydrodynamics.compute_marine_wrench()` and documented pure force
   calculations;
 - `blue_drake.sensors.sensor_profile()`, profile configuration types, and
