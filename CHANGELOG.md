@@ -4,6 +4,11 @@ All notable changes to Blue Drake are documented here. The project uses
 semantic package versions while separately versioning scenarios, run artifacts,
 and analytical benchmark output.
 
+## Unreleased
+
+- Pass the custom-named marine plant and scene graph explicitly to Drake's
+  visualization configuration, restoring Meshcat startup on Drake 1.54.
+
 ## 0.1.0 - 2026-07-21
 
 Initial student release candidate:

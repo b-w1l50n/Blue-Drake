@@ -83,6 +83,37 @@ def test_marine_world_rejects_invalid_extent() -> None:
         )
 
 
+def test_visualization_receives_explicit_plant_and_scene_graph(
+    monkeypatch,
+) -> None:
+    received = {}
+
+    def apply_visualization(
+        config, *, builder, plant, scene_graph, meshcat
+    ) -> None:
+        received.update(
+            config=config,
+            builder=builder,
+            plant=plant,
+            scene_graph=scene_graph,
+            meshcat=meshcat,
+        )
+
+    monkeypatch.setattr(
+        "blue_drake.simulation.ApplyVisualizationConfig",
+        apply_visualization,
+    )
+    meshcat = _RecordingMeshcat()
+    model = build_marine_fleet_diagram(
+        {"rov_1": rov_preset()},
+        meshcat=meshcat,
+    )
+
+    assert received["plant"] is model.plant
+    assert received["scene_graph"] is model.scene_graph
+    assert received["meshcat"] is meshcat
+
+
 def test_custom_vector_sensor_exports_supplied_value_port() -> None:
     from pydrake.systems.analysis import Simulator
 

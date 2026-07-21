@@ -33,7 +33,10 @@ try:
     from pydrake.multibody.tree import SpatialInertia, UnitInertia
     from pydrake.systems.framework import DiagramBuilder
     from pydrake.systems.primitives import Adder, LogVectorOutput
-    from pydrake.visualization import AddDefaultVisualization
+    from pydrake.visualization import (
+        ApplyVisualizationConfig,
+        VisualizationConfig,
+    )
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
         "Drake is required for blue_drake.simulation; install the package"
@@ -461,7 +464,13 @@ def build_marine_fleet_diagram(
             seafloor_z_W_m=seafloor_z_W_m,
             world_extent_m=world_extent_m,
         )
-        AddDefaultVisualization(builder, meshcat=meshcat)
+        ApplyVisualizationConfig(
+            VisualizationConfig(),
+            builder=builder,
+            plant=plant,
+            scene_graph=scene_graph,
+            meshcat=meshcat,
+        )
     return MarineFleetModel(
         diagram=builder.Build(),
         plant=plant,
