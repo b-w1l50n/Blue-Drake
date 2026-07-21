@@ -203,6 +203,7 @@ def build_marine_fleet_diagram(
     sensors: Mapping[str, tuple[MountedSensorConfig, ...]] | None = None,
     time_step_s: float = 0.005,
     water_density_kg_m3: float = 1025.0,
+    air_density_kg_m3: float = 1.225,
     gravity_mps2: float = 9.81,
     surface_pressure_Pa: float = 101_325.0,
     water_temperature_C: float = 10.0,
@@ -221,11 +222,16 @@ def build_marine_fleet_diagram(
         raise ValueError("time_step_s must be positive and finite")
     if any(
         value <= 0.0 or not math.isfinite(value)
-        for value in (water_density_kg_m3, gravity_mps2, surface_pressure_Pa)
+        for value in (
+            water_density_kg_m3,
+            air_density_kg_m3,
+            gravity_mps2,
+            surface_pressure_Pa,
+        )
     ):
         raise ValueError(
-            "water density, gravity, and surface pressure must be positive "
-            "and finite"
+            "air and water density, gravity, and surface pressure must be "
+            "positive and finite"
         )
     if not math.isfinite(water_temperature_C):
         raise ValueError("water_temperature_C must be finite")
@@ -279,6 +285,7 @@ def build_marine_fleet_diagram(
                 config,
                 body.index(),
                 water_density_kg_m3=water_density_kg_m3,
+                air_density_kg_m3=air_density_kg_m3,
                 gravity_mps2=gravity_mps2,
             )
         )
@@ -354,6 +361,10 @@ def build_marine_fleet_diagram(
         builder.ExportInput(
             hydrodynamics.water_current_input,
             f"{vehicle_id}_water_current_W_mps",
+        )
+        builder.ExportInput(
+            hydrodynamics.wind_velocity_input,
+            f"{vehicle_id}_wind_velocity_W_mps",
         )
         builder.ExportInput(
             applied_wrench_port,

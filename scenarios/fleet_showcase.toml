@@ -4,6 +4,7 @@ duration_s = 300.0
 time_step_s = 0.01
 gravity_mps2 = 9.81
 water_density_kg_m3 = 1025.0
+air_density_kg_m3 = 1.225
 surface_pressure_Pa = 101325.0
 water_temperature_C = 12.0
 seafloor_z_W_m = -20.0

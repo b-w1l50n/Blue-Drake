@@ -40,6 +40,8 @@ planning with acoustic, dynamics, actuation, and sensor foundations:
 
 - validated scenario and vehicle configuration types,
 - submerged and surface-piercing hydrostatic modes,
+- distinct air and water densities, steady wind/current inputs, and exposed-box
+  aerodynamic drag,
 - linear and quadratic body-frame drag,
 - buoyancy and center-of-buoyancy restoring torque,
 - fixed thruster and propeller geometry in body coordinates,
@@ -131,7 +133,8 @@ See [architecture](docs/architecture.md), [fidelity](docs/fidelity.md), and
 [actuation](docs/actuation.md) before extending a model. Sensor contributors
 should also read [sensor semantics and provenance](docs/sensors.md),
 [acoustic communication semantics](docs/acoustics.md), and
-[marine dynamics](docs/dynamics.md). Custom sensor authors should read
+[marine dynamics](docs/dynamics.md). The phase boundary and wind model are in
+[the environment contract](docs/environment.md). Custom sensor authors should read
 [custom sensor profiles and supplied values](docs/custom_sensors.md), plus
 [scenario and experiment tooling](docs/experiment_tooling.md),
 [generic grid path planning](docs/planning.md), and

@@ -24,6 +24,10 @@ def test_surface_and_subsea_presets_use_distinct_hydrostatics() -> None:
     assert usv_preset().hydrostatic_mode is HydrostaticMode.SURFACE_PIERCING
     assert rov_preset().hydrostatic_mode is HydrostaticMode.SUBMERGED
     assert glider_preset().hydrostatic_mode is HydrostaticMode.SUBMERGED
+    assert all(
+        coefficient > 0.0
+        for coefficient in usv_preset().air_drag_coefficient_xyz
+    )
 
 
 def test_vehicle_preset_reports_supported_choices() -> None:

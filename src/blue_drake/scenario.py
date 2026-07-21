@@ -111,6 +111,7 @@ class ScenarioVehicle:
     initial_position_W_m: Vector3
     initial_rpy_deg: Vector3 = (0.0, 0.0, 0.0)
     water_current_W_mps: Vector3 = (0.0, 0.0, 0.0)
+    wind_velocity_W_mps: Vector3 = (0.0, 0.0, 0.0)
     wrench_command_B: Vector6 = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     applied_wrench_B: Vector6 = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
     glider_command: Vector2 = (0.0, 0.0)
@@ -122,6 +123,7 @@ class ScenarioVehicle:
             ("initial_position_W_m", 3),
             ("initial_rpy_deg", 3),
             ("water_current_W_mps", 3),
+            ("wind_velocity_W_mps", 3),
             ("wrench_command_B", 6),
             ("applied_wrench_B", 6),
             ("glider_command", 2),
@@ -192,6 +194,7 @@ class MarineScenario:
     time_step_s: float = 0.005
     gravity_mps2: float = 9.81
     water_density_kg_m3: float = 1025.0
+    air_density_kg_m3: float = 1.225
     surface_pressure_Pa: float = 101_325.0
     water_temperature_C: float = 10.0
     seafloor_z_W_m: float = -50.0
@@ -222,6 +225,7 @@ class MarineScenario:
             "time_step_s",
             "gravity_mps2",
             "water_density_kg_m3",
+            "air_density_kg_m3",
             "surface_pressure_Pa",
         ):
             value = getattr(self, name)
@@ -587,6 +591,7 @@ def _parse_vehicle(
         "position_W_m",
         "rpy_deg",
         "water_current_W_mps",
+        "wind_velocity_W_mps",
         "wrench_command_B",
         "applied_wrench_B",
         "glider_command",
@@ -613,6 +618,11 @@ def _parse_vehicle(
         water_current_W_mps=_vector(
             f"vehicle {index} water_current_W_mps",
             data.get("water_current_W_mps", (0, 0, 0)),
+            3,
+        ),
+        wind_velocity_W_mps=_vector(
+            f"vehicle {index} wind_velocity_W_mps",
+            data.get("wind_velocity_W_mps", (0, 0, 0)),
             3,
         ),
         wrench_command_B=_vector(
@@ -650,6 +660,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
         "time_step_s",
         "gravity_mps2",
         "water_density_kg_m3",
+        "air_density_kg_m3",
         "surface_pressure_Pa",
         "water_temperature_C",
         "seafloor_z_W_m",
@@ -713,6 +724,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
         time_step_s=float(raw.get("time_step_s", 0.005)),
         gravity_mps2=float(raw.get("gravity_mps2", 9.81)),
         water_density_kg_m3=float(raw.get("water_density_kg_m3", 1025.0)),
+        air_density_kg_m3=float(raw.get("air_density_kg_m3", 1.225)),
         surface_pressure_Pa=float(raw.get("surface_pressure_Pa", 101_325.0)),
         water_temperature_C=float(raw.get("water_temperature_C", 10.0)),
         seafloor_z_W_m=float(raw.get("seafloor_z_W_m", -50.0)),

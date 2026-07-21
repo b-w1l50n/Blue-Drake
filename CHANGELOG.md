@@ -12,6 +12,8 @@ and analytical benchmark output.
   transition so positive-buoyancy vehicles cannot accelerate into the sky.
 - Add a five-minute, trimmed `fleet_showcase.toml` Meshcat scenario without
   permanent horizontal propulsion commands.
+- Separate air density and wind from water density and current, and apply an
+  exposed-box aerodynamic drag envelope above the free surface.
 
 ## 0.1.0 - 2026-07-21
 

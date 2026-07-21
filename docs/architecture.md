@@ -62,6 +62,11 @@ glider-wing, and surface-restoring foundations described in
 [marine dynamics](dynamics.md). They remain pure calculations; Drake adapters
 only obtain plant state, connect commands, and emit spatial forces.
 
+Air and water properties, currents, wind, immersion, and exposed-area semantics
+are documented in [the environment contract](environment.md). Air drag and
+water-relative loads are calculated separately before their world-frame forces
+are combined.
+
 Acoustic scheduling is a separate deterministic calculation over declared
 transmissions and stationary node positions. The CLI currently evaluates it
 from initial scenario geometry; it is not a live network or a Drake plant

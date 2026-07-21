@@ -31,6 +31,7 @@ def scenario_summary(scenario: MarineScenario) -> dict[str, Any]:
         "environment": {
             "gravity_mps2": scenario.gravity_mps2,
             "water_density_kg_m3": scenario.water_density_kg_m3,
+            "air_density_kg_m3": scenario.air_density_kg_m3,
             "surface_pressure_Pa": scenario.surface_pressure_Pa,
             "water_temperature_C": scenario.water_temperature_C,
             "seafloor_z_W_m": scenario.seafloor_z_W_m,
@@ -44,6 +45,7 @@ def scenario_summary(scenario: MarineScenario) -> dict[str, Any]:
                 "initial_position_W_m": list(vehicle.initial_position_W_m),
                 "initial_rpy_deg": list(vehicle.initial_rpy_deg),
                 "water_current_W_mps": list(vehicle.water_current_W_mps),
+                "wind_velocity_W_mps": list(vehicle.wind_velocity_W_mps),
                 "wrench_command_B": list(vehicle.wrench_command_B),
                 "applied_wrench_B": list(vehicle.applied_wrench_B),
                 "glider_command": list(vehicle.glider_command),

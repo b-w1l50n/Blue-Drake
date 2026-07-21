@@ -106,6 +106,7 @@ class MarineVehicleConfig:
     angular_quadratic_drag_Nm_per_radps2: Vector3
     added_mass_diagonal_kg: Vector3 = (0.0, 0.0, 0.0)
     added_inertia_diagonal_kg_m2: Vector3 = (0.0, 0.0, 0.0)
+    air_drag_coefficient_xyz: Vector3 = (1.0, 1.0, 1.0)
     hydrostatic_mode: HydrostaticMode = HydrostaticMode.SUBMERGED
     surface_heave_stiffness_N_per_m: float = 0.0
     surface_roll_stiffness_Nm_per_rad: float = 0.0
@@ -128,6 +129,7 @@ class MarineVehicleConfig:
         positive_vectors = (
             "dimensions_m",
             "dry_inertia_diagonal_kg_m2",
+            "air_drag_coefficient_xyz",
         )
         nonnegative_vectors = (
             "linear_drag_N_per_mps",

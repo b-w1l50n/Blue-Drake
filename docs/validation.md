@@ -17,6 +17,7 @@ expected value, observed value, units, tolerances, error, and pass status.
 |---|---|
 | Submerged buoyancy | `rho * displaced_volume * gravity` |
 | Free-surface immersion | box centered on waterline has half buoyancy |
+| Air drag | `-0.5 * air_density * coefficient * area * abs(speed) * speed` |
 | Surge drag | `-linear_coefficient * u - quadratic_coefficient * abs(u) * u` |
 | Surface heave | `mass * gravity - heave_stiffness * displacement` |
 | Diagonal added mass | `force / (dry_mass + added_mass)` |

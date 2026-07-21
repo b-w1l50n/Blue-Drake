@@ -185,6 +185,9 @@ def _configure_context(model, scenario: MarineScenario, context) -> object:
             f"{configured.vehicle_id}_water_current_W_mps"
         ).FixValue(context, configured.water_current_W_mps)
         model.diagram.GetInputPort(
+            f"{configured.vehicle_id}_wind_velocity_W_mps"
+        ).FixValue(context, configured.wind_velocity_W_mps)
+        model.diagram.GetInputPort(
             f"{configured.vehicle_id}_applied_wrench_B"
         ).FixValue(context, configured.applied_wrench_B)
         if configured.config.actuator_bank is not None:
@@ -292,6 +295,7 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
         },
         time_step_s=scenario.time_step_s,
         water_density_kg_m3=scenario.water_density_kg_m3,
+        air_density_kg_m3=scenario.air_density_kg_m3,
         gravity_mps2=scenario.gravity_mps2,
         surface_pressure_Pa=scenario.surface_pressure_Pa,
         water_temperature_C=scenario.water_temperature_C,

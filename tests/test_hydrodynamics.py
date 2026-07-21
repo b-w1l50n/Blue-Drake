@@ -5,6 +5,7 @@ import pytest
 
 from blue_drake.hydrodynamics import (
     MarineWrench,
+    aerodynamic_drag_force_B,
     buoyancy_force_N,
     compute_marine_wrench,
     effective_inertia_wrench,
@@ -57,8 +58,53 @@ def test_emerged_submerged_vehicle_has_no_buoyancy_or_water_drag() -> None:
         config,
         body_origin_W_m=(0.0, 0.0, 2.0),
         translational_velocity_W_mps=(1.0, 0.0, 0.0),
+        wind_velocity_W_mps=(1.0, 0.0, 0.0),
     )
     assert wrench.force_W_N == pytest.approx(np.zeros(3))
+
+
+def test_emerged_vehicle_receives_air_drag_not_water_drag() -> None:
+    config = rov_preset()
+    speed = 10.0
+    force = aerodynamic_drag_force_B(
+        config,
+        relative_air_velocity_B_mps=(speed, 0.0, 0.0),
+        air_density_kg_m3=1.225,
+        exposed_fraction=1.0,
+    )
+    expected = (
+        -0.5
+        * 1.225
+        * config.air_drag_coefficient_xyz[0]
+        * config.dimensions_m[1]
+        * config.dimensions_m[2]
+        * speed**2
+    )
+    assert force == pytest.approx((expected, 0.0, 0.0))
+
+
+def test_air_drag_uses_wind_relative_motion_and_exposed_fraction() -> None:
+    config = rov_preset()
+    calm = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 2.0),
+        translational_velocity_W_mps=(4.0, 0.0, 0.0),
+    )
+    matching_wind = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 2.0),
+        translational_velocity_W_mps=(4.0, 0.0, 0.0),
+        wind_velocity_W_mps=(4.0, 0.0, 0.0),
+    )
+    half_exposed = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 0.0),
+        translational_velocity_W_mps=(4.0, 0.0, 0.0),
+        water_current_W_mps=(4.0, 0.0, 0.0),
+    )
+    assert calm.force_W_N[0] < 0.0
+    assert matching_wind.force_W_N[0] == pytest.approx(0.0)
+    assert half_exposed.force_W_N[0] == pytest.approx(0.5 * calm.force_W_N[0])
 
 
 def test_partly_emerged_buoyancy_scales_with_immersed_fraction() -> None:

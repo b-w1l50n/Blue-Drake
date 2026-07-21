@@ -53,6 +53,8 @@ def test_mixed_scenario_loads_all_public_vehicle_categories() -> None:
     }
     assert scenario.seafloor_z_W_m == -20.0
     assert scenario.world_extent_m == 80.0
+    assert scenario.air_density_kg_m3 == pytest.approx(1.225)
+    assert surface.wind_velocity_W_mps == (2.0, 0.0, 0.0)
     assert len(scenario.acoustic.transmissions) == 4
     assert scenario.acoustic.transmissions[0].source_id == "surface_1"
     glider = next(

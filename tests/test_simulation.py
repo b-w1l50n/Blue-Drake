@@ -30,6 +30,9 @@ def _fix_inputs(model, context) -> None:
             f"{vehicle.vehicle_id}_water_current_W_mps"
         ).FixValue(context, np.zeros(3))
         model.diagram.GetInputPort(
+            f"{vehicle.vehicle_id}_wind_velocity_W_mps"
+        ).FixValue(context, np.zeros(3))
+        model.diagram.GetInputPort(
             f"{vehicle.vehicle_id}_applied_wrench_B"
         ).FixValue(context, np.zeros(6))
         if vehicle.actuators is not None:
@@ -141,6 +144,9 @@ def test_custom_vector_sensor_exports_supplied_value_port() -> None:
     model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
         context, np.zeros(3)
     )
+    model.diagram.GetInputPort("rov_1_wind_velocity_W_mps").FixValue(
+        context, np.zeros(3)
+    )
     model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
         context, np.zeros(6)
     )
@@ -210,6 +216,7 @@ def test_mixed_surface_and_subsea_diagram_builds_and_advances() -> None:
         {"usv_1": usv_preset(), "rov_1": rov_preset()}
     )
     assert model.diagram.HasInputPort("usv_1_water_current_W_mps")
+    assert model.diagram.HasInputPort("usv_1_wind_velocity_W_mps")
     assert model.diagram.HasInputPort("rov_1_applied_wrench_B")
     assert model.diagram.HasInputPort("usv_1_wrench_command_B")
 
@@ -258,6 +265,9 @@ def test_explicit_body_wrench_moves_vehicle_forward() -> None:
     model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
         context, np.zeros(3)
     )
+    model.diagram.GetInputPort("rov_1_wind_velocity_W_mps").FixValue(
+        context, np.zeros(3)
+    )
     model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
         context, [0.0, 0.0, 0.0, 20.0, 0.0, 0.0]
     )
@@ -287,6 +297,9 @@ def test_positive_buoyancy_settles_at_free_surface() -> None:
     model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
         context, np.zeros(3)
     )
+    model.diagram.GetInputPort("rov_1_wind_velocity_W_mps").FixValue(
+        context, np.zeros(3)
+    )
     model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
         context, np.zeros(6)
     )
@@ -313,6 +326,9 @@ def test_bounded_actuator_command_moves_vehicle_and_reports_thrust() -> None:
         plant_context, vehicle.body, RigidTransform([0.0, 0.0, -2.0])
     )
     model.diagram.GetInputPort("uuv_1_water_current_W_mps").FixValue(
+        context, np.zeros(3)
+    )
+    model.diagram.GetInputPort("uuv_1_wind_velocity_W_mps").FixValue(
         context, np.zeros(3)
     )
     model.diagram.GetInputPort("uuv_1_applied_wrench_B").FixValue(

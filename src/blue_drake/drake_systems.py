@@ -141,6 +141,7 @@ class MarineHydrodynamicForceSystem(LeafSystem):
         body_index,
         *,
         water_density_kg_m3: float,
+        air_density_kg_m3: float,
         gravity_mps2: float,
     ) -> None:
         super().__init__()
@@ -148,6 +149,7 @@ class MarineHydrodynamicForceSystem(LeafSystem):
         self._body_index = body_index
         self._body_offset = int(body_index)
         self._water_density_kg_m3 = float(water_density_kg_m3)
+        self._air_density_kg_m3 = float(air_density_kg_m3)
         self._gravity_mps2 = float(gravity_mps2)
 
         self.body_poses_input = self.DeclareAbstractInputPort(
@@ -159,6 +161,9 @@ class MarineHydrodynamicForceSystem(LeafSystem):
         )
         self.water_current_input = self.DeclareVectorInputPort(
             "water_current_W_mps", BasicVector(3)
+        )
+        self.wind_velocity_input = self.DeclareVectorInputPort(
+            "wind_velocity_W_mps", BasicVector(3)
         )
         self.applied_wrench_input = self.DeclareVectorInputPort(
             "applied_wrench_B", BasicVector(6)
@@ -191,9 +196,11 @@ class MarineHydrodynamicForceSystem(LeafSystem):
             angular_velocity_W_radps=velocity.rotational(),
             translational_velocity_W_mps=velocity.translational(),
             water_current_W_mps=self.water_current_input.Eval(context),
+            wind_velocity_W_mps=self.wind_velocity_input.Eval(context),
             applied_wrench_B=self.applied_wrench_input.Eval(context),
             glider_control=glider_control,
             water_density_kg_m3=self._water_density_kg_m3,
+            air_density_kg_m3=self._air_density_kg_m3,
             gravity_mps2=self._gravity_mps2,
         )
         wrench = effective_inertia_wrench(

@@ -15,6 +15,7 @@ def test_scenario_summary_is_json_ready_and_preserves_units() -> None:
     )
     assert summary["schema_version"] == 1
     assert summary["environment"]["seafloor_z_W_m"] == -20.0
+    assert summary["environment"]["air_density_kg_m3"] == 1.225
     assert {vehicle["kind"] for vehicle in summary["vehicles"]} == {
         "glider",
         "rov",
@@ -24,6 +25,7 @@ def test_scenario_summary_is_json_ready_and_preserves_units() -> None:
     assert summary["network"]["transmission_count"] == 4
     surface = summary["vehicles"][0]
     assert surface["wrench_command_B"] == [0.0, 0.0, 0.0, 8.0, 0.0, 0.0]
+    assert surface["wind_velocity_W_mps"] == [2.0, 0.0, 0.0]
     assert surface["sensors"][0]["bias"] == [0.0] * 6
     assert [event["status"] for event in summary["network"]["events"]] == [
         "delivered",

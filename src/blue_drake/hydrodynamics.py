@@ -146,6 +146,43 @@ def submerged_box_fraction(
     return float(np.clip(submerged_height_m / height_m, 0.0, 1.0))
 
 
+def aerodynamic_drag_force_B(
+    config: MarineVehicleConfig,
+    *,
+    relative_air_velocity_B_mps: ArrayLike,
+    air_density_kg_m3: float,
+    exposed_fraction: float,
+) -> Vector:
+    """Return quadratic box-envelope drag from air relative motion.
+
+    Projected areas use the configured upright body dimensions. Coefficients
+    are dimensionless per body axis; this is a transparent low-speed envelope,
+    not an aerodynamic or wind-tunnel model.
+    """
+
+    velocity_B = _vector(
+        "relative_air_velocity_B_mps", relative_air_velocity_B_mps, 3
+    )
+    if air_density_kg_m3 <= 0.0 or not np.isfinite(air_density_kg_m3):
+        raise ValueError("air_density_kg_m3 must be positive and finite")
+    if not 0.0 <= exposed_fraction <= 1.0 or not np.isfinite(exposed_fraction):
+        raise ValueError("exposed_fraction must be finite and in [0, 1]")
+    length_m, width_m, height_m = config.dimensions_m
+    projected_area_m2 = np.array(
+        [width_m * height_m, length_m * height_m, length_m * width_m]
+    )
+    coefficient = np.asarray(config.air_drag_coefficient_xyz)
+    return (
+        -0.5
+        * air_density_kg_m3
+        * exposed_fraction
+        * coefficient
+        * projected_area_m2
+        * np.abs(velocity_B)
+        * velocity_B
+    )
+
+
 def surface_restoring_torque_B(
     config: MarineVehicleConfig, *, rotation_WB: ArrayLike
 ) -> Vector:
@@ -220,9 +257,11 @@ def compute_marine_wrench(
     angular_velocity_W_radps: ArrayLike,
     translational_velocity_W_mps: ArrayLike,
     water_current_W_mps: ArrayLike = (0.0, 0.0, 0.0),
+    wind_velocity_W_mps: ArrayLike = (0.0, 0.0, 0.0),
     applied_wrench_B: ArrayLike = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     glider_control: ArrayLike = (0.0, 0.0),
     water_density_kg_m3: float = 1025.0,
+    air_density_kg_m3: float = 1.225,
     gravity_mps2: float = 9.81,
 ) -> MarineWrench:
     """Calculate buoyancy, drag, and caller-supplied actuation.
@@ -241,6 +280,7 @@ def compute_marine_wrench(
         "translational_velocity_W_mps", translational_velocity_W_mps, 3
     )
     current_W = _vector("water_current_W_mps", water_current_W_mps, 3)
+    wind_W = _vector("wind_velocity_W_mps", wind_velocity_W_mps, 3)
     applied_B = _vector("applied_wrench_B", applied_wrench_B, 6)
     glider_control = _vector("glider_control", glider_control, 2)
     if config.glider_control is None and np.any(glider_control != 0.0):
@@ -257,6 +297,7 @@ def compute_marine_wrench(
         )
 
     relative_linear_B = rotation_BW @ (velocity_W - current_W)
+    relative_air_B = rotation_BW @ (velocity_W - wind_W)
     angular_velocity_B = rotation_BW @ angular_velocity_W
     immersion_fraction = (
         submerged_box_fraction(
@@ -265,6 +306,10 @@ def compute_marine_wrench(
         )
         if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
         else 1.0
+    )
+    exposed_fraction = 1.0 - submerged_box_fraction(
+        config,
+        body_origin_z_W_m=float(position_W[2]),
     )
     linear_drag = np.asarray(config.linear_drag_N_per_mps)
     quadratic_drag = np.asarray(config.quadratic_drag_N_per_mps2)
@@ -279,6 +324,12 @@ def compute_marine_wrench(
             water_density_kg_m3=water_density_kg_m3,
         )
         * immersion_fraction
+    )
+    air_drag_force_B = aerodynamic_drag_force_B(
+        config,
+        relative_air_velocity_B_mps=relative_air_B,
+        air_density_kg_m3=air_density_kg_m3,
+        exposed_fraction=exposed_fraction,
     )
     angular_linear_drag = np.asarray(config.angular_linear_drag_Nm_per_radps)
     angular_quadratic_drag = np.asarray(
@@ -318,6 +369,8 @@ def compute_marine_wrench(
         + control_torque_B
         + applied_B[:3]
     )
-    force_W = rotation_WB @ (drag_force_B + wing_force_B + applied_B[3:])
+    force_W = rotation_WB @ (
+        drag_force_B + wing_force_B + air_drag_force_B + applied_B[3:]
+    )
     force_W += buoyancy_force_W
     return MarineWrench(torque_W_Nm=torque_W, force_W_N=force_W)

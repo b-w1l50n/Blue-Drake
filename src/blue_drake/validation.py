@@ -15,6 +15,7 @@ from blue_drake.acoustics import (
 from blue_drake.actuators import rov_actuator_preset, wrench_from_thrusts
 from blue_drake.hydrodynamics import (
     MarineWrench,
+    aerodynamic_drag_force_B,
     buoyancy_force_N,
     compute_marine_wrench,
     effective_inertia_wrench,
@@ -124,6 +125,29 @@ def _free_surface_buoyancy_check() -> ValidationCheck:
         expected=0.5,
         observed=observed_support / full_support,
         unit="ratio",
+    )
+
+
+def _air_drag_check() -> ValidationCheck:
+    density, speed = 1.225, 10.0
+    config = rov_preset()
+    force = aerodynamic_drag_force_B(
+        config,
+        relative_air_velocity_B_mps=(speed, 0.0, 0.0),
+        air_density_kg_m3=density,
+        exposed_fraction=1.0,
+    )
+    expected = -0.5 * density * config.air_drag_coefficient_xyz[0]
+    expected *= config.dimensions_m[1] * config.dimensions_m[2] * speed**2
+    return ValidationCheck(
+        check_id="air-drag-envelope",
+        description=(
+            "Exposed-body air drag follows the declared quadratic model."
+        ),
+        equation="F_air,x = -0.5*rho_air*C_d,x*A_x*|u|u",
+        expected=expected,
+        observed=float(force[0]),
+        unit="N",
     )
 
 
@@ -293,6 +317,7 @@ def run_validation_suite() -> ValidationReport:
         checks=(
             _submerged_buoyancy_check(),
             _free_surface_buoyancy_check(),
+            _air_drag_check(),
             _surge_drag_check(),
             _surface_heave_check(),
             _added_mass_check(),
