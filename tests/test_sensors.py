@@ -221,6 +221,43 @@ def test_sonar_center_ray_is_invalid_when_sensor_is_in_air() -> None:
     assert result == pytest.approx([100.0, 0.0])
 
 
+def test_sonar_is_invalid_below_profile_depth_rating() -> None:
+    result = flat_seafloor_range(
+        ping_sonar_profile(),
+        sensor_origin_W_m=(0.0, 0.0, -301.0),
+        beam_direction_W=(0.0, 0.0, -1.0),
+        seafloor_z_W_m=-310.0,
+    )
+    assert result == pytest.approx([100.0, 0.0])
+
+
+def test_range_error_cannot_create_target_outside_true_envelope() -> None:
+    result = flat_seafloor_range(
+        ping_sonar_profile(),
+        sensor_origin_W_m=(0.0, 0.0, -2.0),
+        beam_direction_W=(0.0, 0.0, -1.0),
+        seafloor_z_W_m=-202.0,
+        range_error_m=-150.0,
+    )
+    assert result == pytest.approx([50.0, 0.0])
+
+
+def test_sonar_rejects_seafloor_above_water_surface() -> None:
+    with pytest.raises(ValueError, match="seafloor must be below"):
+        flat_seafloor_range(
+            ping_sonar_profile(),
+            sensor_origin_W_m=(0.0, 0.0, -2.0),
+            beam_direction_W=(0.0, 0.0, -1.0),
+            seafloor_z_W_m=1.0,
+        )
+
+
+def test_sonar_profile_rejects_nonphysical_angular_envelope() -> None:
+    values = vars(ping_sonar_profile()) | {"horizontal_field_of_view_rad": 7.0}
+    with pytest.raises(ValueError, match="cannot exceed"):
+        type(ping_sonar_profile())(**values)
+
+
 def test_mount_bias_dimension_depends_on_sensor_kind() -> None:
     config = MountedSensorConfig(
         sensor_id="imu",

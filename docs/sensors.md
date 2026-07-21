@@ -40,7 +40,9 @@ pressure and `water_temperature_C`. Above it, they report surface pressure,
 zero inferred depth, and `air_temperature_C`. A flat-seafloor sonar whose
 mounted origin is above the free surface reports its maximum range with
 `valid = 0`; Blue Drake does not pretend that an airborne acoustic ray is an
-underwater return.
+underwater return. Sonar is likewise invalid below the selected profile's depth
+rating. Additive range error cannot manufacture a valid return when the true
+center-ray intersection lies outside the declared range envelope.
 
 ## Hardware-informed profiles
 

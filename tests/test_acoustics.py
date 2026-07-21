@@ -188,3 +188,15 @@ def test_acoustic_event_is_out_of_medium_when_endpoint_is_in_air() -> None:
     assert all(
         event.status is AcousticDeliveryStatus.OUT_OF_MEDIUM for event in events
     )
+
+
+def test_acoustic_event_is_out_of_depth_below_modem_rating() -> None:
+    event = schedule_transmissions(
+        DIVENET_SEALINK_3KM_OEM,
+        node_positions_W_m={
+            "deep": (0, 0, -1000.01),
+            "water": (10, 0, -1),
+        },
+        requests=(_request("deep_to_water", "deep", "water"),),
+    )[0]
+    assert event.status is AcousticDeliveryStatus.OUT_OF_DEPTH

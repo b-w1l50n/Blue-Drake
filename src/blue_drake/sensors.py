@@ -207,6 +207,13 @@ class SonarProfile:
             raise ValueError("minimum_range_m must be finite and nonnegative")
         if self.minimum_range_m >= self.maximum_range_m:
             raise ValueError("minimum sonar range must be below maximum range")
+        if (
+            self.horizontal_field_of_view_rad > 2.0 * math.pi
+            or self.vertical_field_of_view_rad > 2.0 * math.pi
+        ):
+            raise ValueError("sonar fields of view cannot exceed 2*pi")
+        if self.range_resolution_fraction > 1.0:
+            raise ValueError("range_resolution_fraction cannot exceed one")
         if self.maximum_ping_rate_hz is not None:
             _positive("maximum_ping_rate_hz", self.maximum_ping_rate_hz)
 
@@ -660,13 +667,22 @@ def flat_seafloor_range(
         raise ValueError(
             "seafloor, water surface, and range error must be finite"
         )
+    if seafloor_z_W_m >= water_surface_z_W_m:
+        raise ValueError("seafloor must be below the water surface")
     if origin[2] > water_surface_z_W_m:
+        return np.array([profile.maximum_range_m, 0.0])
+    sensor_depth_m = water_surface_z_W_m - origin[2]
+    if sensor_depth_m > profile.depth_rating_m:
         return np.array([profile.maximum_range_m, 0.0])
     if direction[2] >= -1e-12:
         return np.array([profile.maximum_range_m, 0.0])
     distance = (seafloor_z_W_m - origin[2]) / direction[2]
     measured = distance + range_error_m
-    valid = profile.minimum_range_m <= measured <= profile.maximum_range_m
+    true_valid = profile.minimum_range_m <= distance <= profile.maximum_range_m
+    measured_valid = (
+        profile.minimum_range_m <= measured <= profile.maximum_range_m
+    )
+    valid = true_valid and measured_valid
     return np.array(
         [
             float(

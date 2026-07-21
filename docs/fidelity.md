@@ -21,11 +21,11 @@ a physical model.
 | USV actuation | Generic differential propellers | Rudders, ventilation, curves |
 | USV dynamics | Linear displacement-mode foundation with bounded emergence envelope | Seakeeping, wetted hull form, slamming |
 | Contact | Flat fixed seafloor and primitive vehicle collision geometry | Terrain, hydroelastic tuning |
-| DiveNET Sealink | Published envelope plus provisional deterministic packet schedule | Protocol, channel physics, hardware validation |
+| DiveNET Sealink | Range-, depth-, and phase-bounded provisional deterministic packet schedule | Protocol, channel physics, hardware validation |
 | Bar02 / Bar30 | Hydrostatic pressure and depth | Compensation, drift, wet aging |
 | Xsens MTi-630R | Mounted raw IMU envelope | Proprietary fusion, magnetics, clock |
 | Xsens Avior AHRS | Mounted raw IMU envelope | Proprietary fusion, magnetics, clock |
-| Ping Sonar | Wet-only flat-seafloor center ray | Beam return, confidence, profile |
+| Ping Sonar | Wet, depth-rated flat-seafloor center ray | Beam return, confidence, profile |
 | Cerulean sonars | Profiles plus center ray | Point clouds, imagery, onboard processing |
 | Acoustic events | Wet-endpoint stationary range, timing, collision, and half-duplex diagnostics | Mount offsets, BER/PER, multipath, Doppler, queues, moving links |
 | Meshcat marine world | Water plane and flat seafloor context | Bathymetry, waves, shoreline, water optics |

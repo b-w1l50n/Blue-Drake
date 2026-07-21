@@ -142,6 +142,7 @@ class AcousticDeliveryStatus(StrEnum):
     DELIVERED = "delivered"
     OUT_OF_RANGE = "out_of_range"
     OUT_OF_MEDIUM = "out_of_medium"
+    OUT_OF_DEPTH = "out_of_depth"
     COLLISION = "collision"
     HALF_DUPLEX = "half_duplex"
     TRANSMIT_CONFLICT = "transmit_conflict"
@@ -269,6 +270,11 @@ def schedule_transmissions(
         arrival_end_s = transmit_end_s + estimate.propagation_s
         if source[2] > 0.0 or destination[2] > 0.0:
             status = AcousticDeliveryStatus.OUT_OF_MEDIUM
+        elif (
+            -source[2] > profile.depth_rating_m
+            or -destination[2] > profile.depth_rating_m
+        ):
+            status = AcousticDeliveryStatus.OUT_OF_DEPTH
         elif estimate.in_range:
             status = AcousticDeliveryStatus.DELIVERED
         else:
@@ -290,8 +296,16 @@ def schedule_transmissions(
             first_event = events[first]
             second_event = events[second]
             if (
-                statuses[first] is not AcousticDeliveryStatus.OUT_OF_MEDIUM
-                and statuses[second] is not AcousticDeliveryStatus.OUT_OF_MEDIUM
+                statuses[first]
+                not in {
+                    AcousticDeliveryStatus.OUT_OF_MEDIUM,
+                    AcousticDeliveryStatus.OUT_OF_DEPTH,
+                }
+                and statuses[second]
+                not in {
+                    AcousticDeliveryStatus.OUT_OF_MEDIUM,
+                    AcousticDeliveryStatus.OUT_OF_DEPTH,
+                }
                 and first_event.request.source_id
                 == second_event.request.source_id
                 and _overlaps(

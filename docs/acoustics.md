@@ -47,6 +47,7 @@ arrival timing, and one of these outcomes:
 - `delivered`: within the profile range with no modeled conflict,
 - `out_of_range`: range exceeds the profile maximum,
 - `out_of_medium`: either endpoint is above the water surface,
+- `out_of_depth`: either endpoint exceeds the modem depth rating,
 - `collision`: arrivals overlap at one receiver on one code channel,
 - `half_duplex`: the receiver transmits while the payload arrives, or
 - `transmit_conflict`: one source is asked to transmit overlapping payloads.
