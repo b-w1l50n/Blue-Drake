@@ -133,7 +133,7 @@ class GliderControlSystem(LeafSystem):
 
 
 class MarineHydrodynamicForceSystem(LeafSystem):
-    """Apply buoyancy, drag, and an explicit body-frame wrench to one body."""
+    """Apply environmental, medium-limited actuator, and external loads."""
 
     def __init__(
         self,
@@ -168,6 +168,11 @@ class MarineHydrodynamicForceSystem(LeafSystem):
         self.applied_wrench_input = self.DeclareVectorInputPort(
             "applied_wrench_B", BasicVector(6)
         )
+        self.actuator_wrench_input = None
+        if config.actuator_bank is not None:
+            self.actuator_wrench_input = self.DeclareVectorInputPort(
+                "actuator_wrench_B", BasicVector(6)
+            )
         self.glider_control_input = None
         if config.glider_control is not None:
             self.glider_control_input = self.DeclareVectorInputPort(
@@ -189,6 +194,11 @@ class MarineHydrodynamicForceSystem(LeafSystem):
             if self.glider_control_input is None
             else self.glider_control_input.Eval(context)
         )
+        actuator_wrench = (
+            np.zeros(6)
+            if self.actuator_wrench_input is None
+            else self.actuator_wrench_input.Eval(context)
+        )
         wrench = compute_marine_wrench(
             self._config,
             rotation_WB=pose.rotation().matrix(),
@@ -197,6 +207,7 @@ class MarineHydrodynamicForceSystem(LeafSystem):
             translational_velocity_W_mps=velocity.translational(),
             water_current_W_mps=self.water_current_input.Eval(context),
             wind_velocity_W_mps=self.wind_velocity_input.Eval(context),
+            actuator_wrench_B=actuator_wrench,
             applied_wrench_B=self.applied_wrench_input.Eval(context),
             glider_control=glider_control,
             water_density_kg_m3=self._water_density_kg_m3,

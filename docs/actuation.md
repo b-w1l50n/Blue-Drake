@@ -40,12 +40,19 @@ This response provides finite actuator bandwidth. It does not represent motor
 current, shaft speed, advance ratio, inflow, wake interaction, ventilation, or
 cavitation.
 
+The resulting actuator wrench then passes through the documented
+box-immersion authority envelope. Underwater propulsors lose authority as the
+body emerges; surface propulsors retain full authority at the nominal
+waterline and lose it above that point. This is a bounded phase approximation,
+not an inflow or ventilation model.
+
 ## Fleet diagram ports
 
 Actuated presets export these ports using the vehicle ID as a prefix:
 
 - `<id>_wrench_command_B`: requested body wrench, torque then force,
-- `<id>_actuator_wrench_B`: actual body wrench after actuator lag,
+- `<id>_actuator_wrench_B`: actual body wrench after actuator lag and before
+  the medium-authority envelope,
 - `<id>_allocated_thrusts_N`: bounded allocation target,
 - `<id>_actual_thrusts_N`: lagged actuator state, and
 - `<id>_applied_wrench_B`: additive external load that bypasses actuation.

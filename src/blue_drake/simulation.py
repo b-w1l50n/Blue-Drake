@@ -32,7 +32,7 @@ try:
     )
     from pydrake.multibody.tree import SpatialInertia, UnitInertia
     from pydrake.systems.framework import DiagramBuilder
-    from pydrake.systems.primitives import Adder, LogVectorOutput
+    from pydrake.systems.primitives import LogVectorOutput
     from pydrake.visualization import (
         ApplyVisualizationConfig,
         VisualizationConfig,
@@ -326,23 +326,15 @@ def build_marine_fleet_diagram(
         )
         actuator_system = None
         glider_control_system = None
-        applied_wrench_port = hydrodynamics.applied_wrench_input
         if config.actuator_bank is not None:
             actuator_system = builder.AddSystem(
                 MarineActuatorSystem(config.actuator_bank)
             )
             actuator_system.set_name(f"{vehicle_id}_actuators")
-            wrench_adder = builder.AddSystem(Adder(2, 6))
-            wrench_adder.set_name(f"{vehicle_id}_wrench_adder")
             builder.Connect(
                 actuator_system.actual_wrench_output,
-                wrench_adder.get_input_port(0),
+                hydrodynamics.actuator_wrench_input,
             )
-            builder.Connect(
-                wrench_adder.get_output_port(),
-                hydrodynamics.applied_wrench_input,
-            )
-            applied_wrench_port = wrench_adder.get_input_port(1)
             builder.ExportInput(
                 actuator_system.wrench_command_input,
                 f"{vehicle_id}_wrench_command_B",
@@ -393,7 +385,7 @@ def build_marine_fleet_diagram(
             f"{vehicle_id}_wind_velocity_W_mps",
         )
         builder.ExportInput(
-            applied_wrench_port,
+            hydrodynamics.applied_wrench_input,
             f"{vehicle_id}_applied_wrench_B",
         )
         builder.ExportOutput(

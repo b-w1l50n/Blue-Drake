@@ -13,7 +13,7 @@ a physical model.
 | Restoring moment | Center-of-buoyancy offset | Metacentric model |
 | Added inertia | Diagonal zero-rate effective-inertia scaling | Coupling, Coriolis, frequency effects |
 | Wrench allocation | Bounded weighted least squares | Temporal optimization, failures |
-| Actuator response | First-order thrust lag | Motor, shaft, inflow, wake |
+| Actuator response | First-order thrust lag and box-immersion authority envelope | Motor, shaft, inflow, ventilation, wake |
 | ROV actuation | Generic eight-thruster layout | Vendor curves and interactions |
 | UUV propulsion | Generic stern propeller | Propeller curves and fins |
 | Glider lift | Low-angle symmetric wing foundation | Stall, sideslip, unsteady flow |

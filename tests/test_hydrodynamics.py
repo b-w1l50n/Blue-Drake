@@ -63,6 +63,59 @@ def test_emerged_submerged_vehicle_has_no_buoyancy_or_water_drag() -> None:
     assert wrench.force_W_N == pytest.approx(np.zeros(3))
 
 
+def test_subsea_actuator_loses_authority_out_of_water() -> None:
+    config = rov_preset()
+    actuator_wrench = (0.0, 0.0, 4.0, 20.0, 0.0, 0.0)
+    emerged = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 2.0),
+        actuator_wrench_B=actuator_wrench,
+    )
+    at_surface = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 0.0),
+        actuator_wrench_B=actuator_wrench,
+    )
+    fully_submerged = _wrench(
+        config,
+        actuator_wrench_B=actuator_wrench,
+    )
+
+    assert emerged.torque_W_Nm[2] == pytest.approx(0.0)
+    assert emerged.force_W_N[0] == pytest.approx(0.0)
+    assert at_surface.torque_W_Nm[2] == pytest.approx(2.0)
+    assert at_surface.force_W_N[0] == pytest.approx(10.0)
+    assert fully_submerged.torque_W_Nm[2] == pytest.approx(4.0)
+    assert fully_submerged.force_W_N[0] == pytest.approx(20.0)
+
+
+def test_external_wrench_remains_effective_out_of_water() -> None:
+    config = rov_preset()
+    wrench = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 2.0),
+        applied_wrench_B=(0.0, 0.0, 4.0, 20.0, 0.0, 0.0),
+    )
+    assert wrench.torque_W_Nm[2] == pytest.approx(4.0)
+    assert wrench.force_W_N[0] == pytest.approx(20.0)
+
+
+def test_surface_propulsor_has_full_authority_at_nominal_waterline() -> None:
+    config = usv_preset()
+    nominal = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, 0.0),
+        actuator_wrench_B=(0.0, 0.0, 0.0, 20.0, 0.0, 0.0),
+    )
+    emerged = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, config.dimensions_m[2]),
+        actuator_wrench_B=(0.0, 0.0, 0.0, 20.0, 0.0, 0.0),
+    )
+    assert nominal.force_W_N[0] == pytest.approx(20.0)
+    assert emerged.force_W_N[0] == pytest.approx(0.0)
+
+
 def test_emerged_vehicle_receives_air_drag_not_water_drag() -> None:
     config = rov_preset()
     speed = 10.0

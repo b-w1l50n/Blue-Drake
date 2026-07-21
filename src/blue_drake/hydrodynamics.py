@@ -258,16 +258,19 @@ def compute_marine_wrench(
     translational_velocity_W_mps: ArrayLike,
     water_current_W_mps: ArrayLike = (0.0, 0.0, 0.0),
     wind_velocity_W_mps: ArrayLike = (0.0, 0.0, 0.0),
+    actuator_wrench_B: ArrayLike = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     applied_wrench_B: ArrayLike = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
     glider_control: ArrayLike = (0.0, 0.0),
     water_density_kg_m3: float = 1025.0,
     air_density_kg_m3: float = 1.225,
     gravity_mps2: float = 9.81,
 ) -> MarineWrench:
-    """Calculate buoyancy, drag, and caller-supplied actuation.
+    """Calculate environmental, propulsor, and caller-supplied loads.
 
     Gravity is absent because Drake's ``MultibodyPlant`` applies dry-body
-    gravity. Added-inertia correction is applied by the Drake adapter.
+    gravity. ``actuator_wrench_B`` is medium-limited; ``applied_wrench_B`` is
+    an unrestricted external load. Added-inertia correction is applied by the
+    Drake adapter.
     """
 
     rotation_WB = _rotation(rotation_WB)
@@ -281,6 +284,7 @@ def compute_marine_wrench(
     )
     current_W = _vector("water_current_W_mps", water_current_W_mps, 3)
     wind_W = _vector("wind_velocity_W_mps", wind_velocity_W_mps, 3)
+    actuator_B = _vector("actuator_wrench_B", actuator_wrench_B, 6)
     applied_B = _vector("applied_wrench_B", applied_wrench_B, 6)
     glider_control = _vector("glider_control", glider_control, 2)
     if config.glider_control is None and np.any(glider_control != 0.0):
@@ -307,9 +311,15 @@ def compute_marine_wrench(
         if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
         else 1.0
     )
-    exposed_fraction = 1.0 - submerged_box_fraction(
+    box_immersion_fraction = submerged_box_fraction(
         config,
         body_origin_z_W_m=float(position_W[2]),
+    )
+    exposed_fraction = 1.0 - box_immersion_fraction
+    actuator_fraction = (
+        box_immersion_fraction
+        if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
+        else min(1.0, 2.0 * box_immersion_fraction)
     )
     linear_drag = np.asarray(config.linear_drag_N_per_mps)
     quadratic_drag = np.asarray(config.quadratic_drag_N_per_mps2)
@@ -349,7 +359,7 @@ def compute_marine_wrench(
             water_density_kg_m3=water_density_kg_m3,
             gravity_mps2=gravity_mps2,
         )
-        + glider_control[0]
+        + glider_control[0] * immersion_fraction
     )
     upward_force_N = max(0.0, upward_force_N)
     buoyancy_force_W = np.array([0.0, 0.0, upward_force_N])
@@ -367,10 +377,15 @@ def compute_marine_wrench(
         + buoyancy_torque_B
         + restoring_torque_B
         + control_torque_B
+        + actuator_B[:3] * actuator_fraction
         + applied_B[:3]
     )
     force_W = rotation_WB @ (
-        drag_force_B + wing_force_B + air_drag_force_B + applied_B[3:]
+        drag_force_B
+        + wing_force_B
+        + air_drag_force_B
+        + actuator_B[3:] * actuator_fraction
+        + applied_B[3:]
     )
     force_W += buoyancy_force_W
     return MarineWrench(torque_W_Nm=torque_W, force_W_N=force_W)

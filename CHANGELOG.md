@@ -19,6 +19,8 @@ and analytical benchmark output.
 - Add fixed flat-seafloor collision geometry matching the rendered plane.
 - Bind Meshcat to localhost by default and provide explicit host and port flags
   for deliberate trusted-LAN access.
+- Reduce subsea and surface propulsor authority as their body leaves the water,
+  while retaining unrestricted external-wrench inputs for test loads.
 
 ## 0.1.0 - 2026-07-21
 

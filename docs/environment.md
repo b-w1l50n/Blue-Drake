@@ -48,6 +48,12 @@ water-drag model. Their exposed box fraction additionally receives aerodynamic
 drag. This prevents atmospheric density or wind from being silently treated as
 water properties.
 
+Underwater propulsor wrenches scale with the same immersed-box fraction and
+reach zero when the body is fully emerged. Surface-vehicle propulsors retain
+full authority at the nominal waterline, then lose it as the hull leaves the
+water. The public `applied_wrench_B` input remains an unrestricted external
+load so callers can represent cranes, tethers, and test forces in either phase.
+
 ## Aerodynamic envelope
 
 For each body axis, air drag is
