@@ -10,6 +10,8 @@ from enum import StrEnum
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
+from blue_drake.identifiers import validate_identifier
+
 Vector = NDArray[np.float64]
 Vector3 = tuple[float, float, float]
 GRAVITY_MPS2 = 9.80665
@@ -53,8 +55,9 @@ def _profile_identity(
     provenance: ParameterProvenance | str,
     source_url: str | None,
 ) -> ParameterProvenance:
-    if not profile_id.strip() or not display_name.strip():
-        raise ValueError("sensor profile identifiers are required")
+    validate_identifier("profile_id", profile_id)
+    if not display_name.strip():
+        raise ValueError("sensor profile display_name is required")
     if source_url is not None and not source_url.strip():
         raise ValueError("source_url cannot be empty when supplied")
     try:
@@ -296,8 +299,7 @@ class MountedSensorConfig:
     supplied_value: tuple[float, ...] = ()
 
     def __post_init__(self) -> None:
-        if not self.sensor_id.strip():
-            raise ValueError("sensor_id cannot be empty")
+        validate_identifier("sensor_id", self.sensor_id)
         for name in ("position_B_m", "rpy_BS_deg"):
             values = _vector(name, getattr(self, name), 3)
             object.__setattr__(

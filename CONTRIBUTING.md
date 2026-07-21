@@ -41,10 +41,14 @@ protocols, visualization, and hardware adapters belong at application
 boundaries. Vendor names must be accompanied by parameter provenance and a
 non-endorsement statement.
 
+Scenario schema changes require an explicit versioning decision, strict parser
+tests, and updated JSON inspection examples. Run artifacts are append-free:
+tools must create a new directory and must not overwrite prior experiment data.
+Generic planners must remain independent of controllers and mission state.
+
 ## Public boundary
 
 Do not contribute Erinyes autonomy, mission behavior, operational endpoints,
 credentials, HIL orchestration, private datasets, or learned-model services.
 Generic controllers and path-planning algorithms are acceptable when they are
 independently documented and tested.
-

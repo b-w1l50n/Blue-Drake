@@ -15,6 +15,7 @@ from blue_drake.acoustics import (
     ModemProfile,
     modem_profile,
 )
+from blue_drake.identifiers import validate_identifier
 from blue_drake.sensors import (
     PROFILE_FACTORIES,
     CustomVectorSensorProfile,
@@ -32,6 +33,7 @@ from blue_drake.vehicles import MarineVehicleConfig, VehicleKind, vehicle_preset
 Vector3 = tuple[float, float, float]
 Vector2 = tuple[float, float]
 Vector6 = tuple[float, float, float, float, float, float]
+CURRENT_SCENARIO_SCHEMA_VERSION = 1
 
 
 def _mapping(name: str, value: Any) -> dict[str, Any]:
@@ -115,8 +117,7 @@ class ScenarioVehicle:
     sensors: tuple[MountedSensorConfig, ...] = ()
 
     def __post_init__(self) -> None:
-        if not self.vehicle_id.strip():
-            raise ValueError("vehicle_id cannot be empty")
+        validate_identifier("vehicle_id", self.vehicle_id)
         for name, size in (
             ("initial_position_W_m", 3),
             ("initial_rpy_deg", 3),
@@ -186,6 +187,7 @@ class MarineScenario:
     vehicles: tuple[ScenarioVehicle, ...]
     acoustic: AcousticScenario
     sensor_profiles: tuple[SensorProfile, ...] = ()
+    schema_version: int = CURRENT_SCENARIO_SCHEMA_VERSION
     duration_s: float = 10.0
     time_step_s: float = 0.005
     gravity_mps2: float = 9.81
@@ -196,6 +198,14 @@ class MarineScenario:
     world_extent_m: float = 100.0
 
     def __post_init__(self) -> None:
+        if (
+            isinstance(self.schema_version, bool)
+            or self.schema_version != CURRENT_SCENARIO_SCHEMA_VERSION
+        ):
+            raise ValueError(
+                "unsupported scenario schema_version; expected "
+                f"{CURRENT_SCENARIO_SCHEMA_VERSION}"
+            )
         if not self.name.strip():
             raise ValueError("scenario name cannot be empty")
         if not self.vehicles:
@@ -634,6 +644,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
     with source.open("rb") as stream:
         raw = tomllib.load(stream)
     allowed = {
+        "schema_version",
         "name",
         "duration_s",
         "time_step_s",
@@ -687,6 +698,10 @@ def load_scenario(path: str | Path) -> MarineScenario:
         ),
     )
     return MarineScenario(
+        schema_version=_integer(
+            "schema_version",
+            raw.get("schema_version", CURRENT_SCENARIO_SCHEMA_VERSION),
+        ),
         name=str(raw.get("name", source.stem)),
         vehicles=tuple(
             _parse_vehicle(value, index, custom_profiles)

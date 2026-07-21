@@ -35,8 +35,8 @@ this project.
 
 ## Current milestone
 
-Milestone 6 adds strict user-defined sensor profiles and supplied-value ports to
-the milestone-5 acoustic, dynamics, actuation, and sensor foundations:
+Milestone 7 adds experiment tooling and generic geometric planning to the
+existing acoustic, dynamics, actuation, and sensor foundations:
 
 - validated scenario and vehicle configuration types,
 - submerged and surface-piercing hydrostatic modes,
@@ -60,6 +60,11 @@ the milestone-5 acoustic, dynamics, actuation, and sensor foundations:
 - explicit custom-value, bias, error, ideal, measured, and validity semantics,
 - declared `assumed`, `measured`, `fitted`, or `published` provenance for custom
   parameters,
+- schema-versioned TOML with lightweight `validate` and `inspect` commands,
+- machine-readable built-in vehicle, sensor, and modem catalogs,
+- deterministic in-memory state and sensor logging with non-overwriting CSV and
+  JSON run artifacts,
+- deterministic optimal axis-connected A* paths over 2D and 3D marine grids,
 - sourced Blue Robotics, Cerulean, and Xsens profiles,
 - mounted pressure/depth, raw IMU, and center-ray sonar outputs,
 - separate ideal, measured, and explicit error ports,
@@ -94,6 +99,13 @@ The command prints a local Meshcat URL. For a terminal-only deterministic run:
   --no-visualizer --duration 2
 ```
 
+Validate or inspect a scenario without launching Drake:
+
+```bash
+.venv/bin/blue-drake validate scenarios/mixed_marine.toml
+.venv/bin/blue-drake inspect scenarios/mixed_marine.toml --json
+```
+
 The library API also exposes `build_marine_fleet_diagram()` so Drake users can
 connect their own controllers, planners, loggers, and analysis systems.
 
@@ -110,6 +122,8 @@ should also read [sensor semantics and provenance](docs/sensors.md),
 [acoustic communication semantics](docs/acoustics.md), and
 [marine dynamics](docs/dynamics.md). Custom sensor authors should read
 [custom sensor profiles and supplied values](docs/custom_sensors.md), plus
+[scenario and experiment tooling](docs/experiment_tooling.md),
+[generic grid path planning](docs/planning.md), and
 [contributing](CONTRIBUTING.md).
 
 ## License

@@ -17,6 +17,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 def test_mixed_scenario_loads_all_public_vehicle_categories() -> None:
     scenario = load_scenario(REPO_ROOT / "scenarios" / "mixed_marine.toml")
     assert scenario.name == "mixed-marine-foundation"
+    assert scenario.schema_version == 1
     assert {vehicle.config.kind for vehicle in scenario.vehicles} == set(
         VehicleKind
     )
@@ -70,6 +71,23 @@ position_W_m = [0, 0, -1]
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="unknown scenario keys"):
+        load_scenario(path)
+
+
+def test_unsupported_schema_version_is_rejected(tmp_path: Path) -> None:
+    path = tmp_path / "future.toml"
+    path.write_text(
+        """
+schema_version = 99
+name = "future"
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -1]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="unsupported scenario schema_version"):
         load_scenario(path)
 
 
@@ -264,6 +282,22 @@ profile = "blue-robotics-bar02"
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="sensor IDs for rov_1 must be unique"):
+        load_scenario(path)
+
+
+def test_vehicle_and_sensor_ids_are_artifact_safe(tmp_path: Path) -> None:
+    path = tmp_path / "unsafe_id.toml"
+    path.write_text(
+        """
+name = "unsafe-id"
+[[vehicles]]
+id = "../rov"
+preset = "rov"
+position_W_m = [0, 0, -1]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="vehicle_id must start with a letter"):
         load_scenario(path)
 
 

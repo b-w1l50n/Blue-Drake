@@ -35,6 +35,9 @@ remaining optional.
   stationary acoustic event scheduling.
 - `blue_drake.sensors`: sourced profiles and Drake-independent measurement math.
 - `blue_drake.sensor_systems`: mounted Drake sensor adapters.
+- `blue_drake.inspection`: JSON-ready scenario and built-in catalog summaries.
+- `blue_drake.run_artifacts`: non-overwriting application-side CSV/JSON export.
+- `blue_drake.planning`: pure 2D/3D grid geometry and A* path search.
 - `blue_drake.cli`: a thin example runner, not simulation state.
 
 Actuated vehicle presets export a six-element commanded body-wrench input and
@@ -66,6 +69,15 @@ state. See [acoustic communication semantics](acoustics.md).
 Meshcat environment geometry is presentation only. The water-surface and
 seafloor boxes provide spatial context but do not generate waves, contact, or
 bathymetric sonar returns.
+
+Vector log sinks are added to a diagram only when requested. They retain
+simulation-time state and sensor samples in memory; filesystem export remains
+in the CLI-side artifact module. Scenario validation, inspection, and catalog
+queries do not import Drake.
+
+Grid planning consumes caller-declared occupancy and returns waypoints. It has
+no connection to plant inputs, controllers, acoustic delivery, or mission
+state, preserving a hard boundary between generic algorithms and autonomy.
 
 ## Public API policy
 

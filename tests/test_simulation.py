@@ -132,6 +132,45 @@ def test_custom_vector_sensor_exports_supplied_value_port() -> None:
     assert measured == pytest.approx([34.9, 1.2, 1.0])
 
 
+def test_periodic_fleet_logs_capture_state_and_sensor_measurements() -> None:
+    from pydrake.math import RigidTransform
+    from pydrake.systems.analysis import Simulator
+
+    sensor = MountedSensorConfig("depth", bar30_profile())
+    model = build_marine_fleet_diagram(
+        {"rov_1": rov_preset()},
+        sensors={"rov_1": (sensor,)},
+        logging_period_s=0.02,
+    )
+    assert {log.log_id for log in model.logs} == {
+        "rov_1_state",
+        "rov_1_depth_measurement",
+    }
+    simulator = Simulator(model.diagram)
+    context = simulator.get_mutable_context()
+    plant_context = model.plant.GetMyMutableContextFromRoot(context)
+    model.plant.SetFreeBodyPose(
+        plant_context,
+        model.vehicle("rov_1").body,
+        RigidTransform([0.0, 0.0, -2.0]),
+    )
+    _fix_inputs(model, context)
+    simulator.Initialize()
+    simulator.AdvanceTo(0.05)
+    logs = {item.log_id: item for item in model.logs}
+    state = logs["rov_1_state"].sink.FindLog(context)
+    depth = logs["rov_1_depth_measurement"].sink.FindLog(context)
+    assert len(logs["rov_1_state"].columns) == 13
+    assert state.data().shape[0] == 13
+    assert depth.data().shape[0] == 4
+    assert state.data()[:7, 0] == pytest.approx(
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0]
+    )
+    assert depth.data()[1, 0] == pytest.approx(2.0)
+    assert state.sample_times() == pytest.approx([0.0, 0.02, 0.04])
+    assert depth.sample_times() == pytest.approx([0.0, 0.02, 0.04])
+
+
 def test_mixed_surface_and_subsea_diagram_builds_and_advances() -> None:
     from pydrake.math import RigidTransform
     from pydrake.systems.analysis import Simulator

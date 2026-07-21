@@ -7,6 +7,7 @@ from blue_drake.actuators import (
     WrenchAllocation,
     allocate_wrench,
 )
+from blue_drake.planning import GridPath, MarineGrid, plan_grid_path
 from blue_drake.sensors import (
     CustomVectorSensorProfile,
     MountedSensorConfig,
@@ -28,11 +29,13 @@ from blue_drake.vehicles import (
 __all__ = [
     "ActuatorBankConfig",
     "ActuatorKind",
+    "CustomVectorSensorProfile",
     "FixedActuatorConfig",
     "GliderControlConfig",
     "GliderWingConfig",
+    "GridPath",
     "MarineVehicleConfig",
-    "CustomVectorSensorProfile",
+    "MarineGrid",
     "MountedSensorConfig",
     "ParameterProvenance",
     "SensorKind",
@@ -40,6 +43,7 @@ __all__ = [
     "WrenchAllocation",
     "allocate_wrench",
     "glider_preset",
+    "plan_grid_path",
     "rov_preset",
     "sensor_profile",
     "usv_preset",

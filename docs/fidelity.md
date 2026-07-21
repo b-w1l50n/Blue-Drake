@@ -30,6 +30,8 @@ a physical model.
 | Meshcat marine world | Water plane and flat seafloor context | Bathymetry, waves, shoreline, water optics |
 | Custom physical profiles | User-defined envelope with existing pressure, raw-IMU, or center-ray physics | Automatic calibration, validation of user sources |
 | Custom vector sensors | Explicit bounded value/error ports with channel metadata | Physical generation, unit conversion, timing, device protocols |
+| Run logging | Periodic generalized state and sensor measurements in CSV with JSON manifest | Streaming, compression, bounded-memory retention |
+| Grid path planning | Optimal deterministic 4/6-connected A* | Dynamic obstacles, vehicle constraints, smoothing, execution |
 
 ## Validation rule
 

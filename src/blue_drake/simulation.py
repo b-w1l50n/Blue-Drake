@@ -14,12 +14,13 @@ from blue_drake.drake_systems import (
     MarineHydrodynamicForceSystem,
     SpatialForceConcatenator,
 )
+from blue_drake.identifiers import validate_identifier
 from blue_drake.sensor_systems import (
     CustomVectorSensorSystem,
     RawImuSensorSystem,
     add_sensor_system,
 )
-from blue_drake.sensors import MountedSensorConfig
+from blue_drake.sensors import MountedSensorConfig, SensorKind
 from blue_drake.vehicles import MarineVehicleConfig
 
 try:
@@ -31,7 +32,7 @@ try:
     )
     from pydrake.multibody.tree import SpatialInertia, UnitInertia
     from pydrake.systems.framework import DiagramBuilder
-    from pydrake.systems.primitives import Adder
+    from pydrake.systems.primitives import Adder, LogVectorOutput
     from pydrake.visualization import AddDefaultVisualization
 except ImportError as exc:  # pragma: no cover
     raise ImportError(
@@ -62,6 +63,15 @@ class FleetSensor:
 
 
 @dataclass(frozen=True)
+class FleetLog:
+    """One deterministic in-memory vector log and its column contract."""
+
+    log_id: str
+    columns: tuple[str, ...]
+    sink: object
+
+
+@dataclass(frozen=True)
 class MarineFleetModel:
     """Built Drake diagram and handles for a mixed marine fleet."""
 
@@ -69,6 +79,7 @@ class MarineFleetModel:
     plant: object
     scene_graph: object
     vehicles: tuple[FleetVehicle, ...]
+    logs: tuple[FleetLog, ...] = ()
 
     def vehicle(self, vehicle_id: str) -> FleetVehicle:
         """Return one vehicle by its stable scenario ID."""
@@ -115,6 +126,43 @@ def _register_vehicle_geometry(
     )
 
 
+def _state_columns() -> tuple[str, ...]:
+    return (
+        "quaternion_w_WB",
+        "quaternion_x_WB",
+        "quaternion_y_WB",
+        "quaternion_z_WB",
+        "position_x_W_m",
+        "position_y_W_m",
+        "position_z_W_m",
+        "angular_velocity_x_W_radps",
+        "angular_velocity_y_W_radps",
+        "angular_velocity_z_W_radps",
+        "translational_velocity_x_W_mps",
+        "translational_velocity_y_W_mps",
+        "translational_velocity_z_W_mps",
+    )
+
+
+def _sensor_columns(config: MountedSensorConfig) -> tuple[str, ...]:
+    if config.profile.kind is SensorKind.PRESSURE:
+        return ("pressure_Pa", "depth_m", "temperature_C", "valid")
+    if config.profile.kind is SensorKind.IMU:
+        return (
+            "gyro_x_S_radps",
+            "gyro_y_S_radps",
+            "gyro_z_S_radps",
+            "specific_force_x_S_mps2",
+            "specific_force_y_S_mps2",
+            "specific_force_z_S_mps2",
+            "gyro_valid",
+            "accel_valid",
+        )
+    if config.profile.kind is SensorKind.CUSTOM_VECTOR:
+        return (*config.profile.channel_names, "valid")
+    return ("center_ray_range_m", "valid")
+
+
 def configure_meshcat_marine_world(
     meshcat,
     *,
@@ -157,14 +205,15 @@ def build_marine_fleet_diagram(
     water_temperature_C: float = 10.0,
     seafloor_z_W_m: float = -50.0,
     world_extent_m: float = 100.0,
+    logging_period_s: float | None = None,
     meshcat=None,
 ) -> MarineFleetModel:
     """Build independently forced marine vehicles in one Drake world."""
 
     if not vehicles:
         raise ValueError("vehicles cannot be empty")
-    if any(not vehicle_id.strip() for vehicle_id in vehicles):
-        raise ValueError("vehicle IDs cannot be empty")
+    for vehicle_id in vehicles:
+        validate_identifier("vehicle_id", vehicle_id)
     if time_step_s <= 0.0 or not math.isfinite(time_step_s):
         raise ValueError("time_step_s must be positive and finite")
     if any(
@@ -181,6 +230,10 @@ def build_marine_fleet_diagram(
         raise ValueError("seafloor_z_W_m must be finite and below zero")
     if world_extent_m <= 0.0 or not math.isfinite(world_extent_m):
         raise ValueError("world_extent_m must be positive and finite")
+    if logging_period_s is not None and (
+        logging_period_s <= 0.0 or not math.isfinite(logging_period_s)
+    ):
+        raise ValueError("logging_period_s must be positive and finite")
     sensors = {} if sensors is None else dict(sensors)
     unknown_sensor_vehicles = set(sensors) - set(vehicles)
     if unknown_sensor_vehicles:
@@ -214,6 +267,7 @@ def build_marine_fleet_diagram(
     concatenator = builder.AddSystem(SpatialForceConcatenator(len(vehicles)))
     concatenator.set_name("marine_force_concatenator")
     built_vehicles = []
+    fleet_logs = []
     for index, ((vehicle_id, config), model_instance, body) in enumerate(
         zip(vehicles.items(), model_instances, bodies, strict=True)
     ):
@@ -306,6 +360,20 @@ def build_marine_fleet_diagram(
             plant.get_state_output_port(model_instance),
             f"{vehicle_id}_state",
         )
+        if logging_period_s is not None:
+            state_logger = LogVectorOutput(
+                plant.get_state_output_port(model_instance),
+                builder,
+                publish_period=logging_period_s,
+            )
+            state_logger.set_name(f"{vehicle_id}_state_logger")
+            fleet_logs.append(
+                FleetLog(
+                    log_id=f"{vehicle_id}_state",
+                    columns=_state_columns(),
+                    sink=state_logger,
+                )
+            )
         fleet_sensors = []
         configured_sensors = tuple(sensors.get(vehicle_id, ()))
         sensor_ids = [sensor.sensor_id for sensor in configured_sensors]
@@ -351,6 +419,20 @@ def build_marine_fleet_diagram(
                 sensor_system.measurement_output,
                 f"{prefix}_measurement",
             )
+            if logging_period_s is not None:
+                sensor_logger = LogVectorOutput(
+                    sensor_system.measurement_output,
+                    builder,
+                    publish_period=logging_period_s,
+                )
+                sensor_logger.set_name(f"{prefix}_measurement_logger")
+                fleet_logs.append(
+                    FleetLog(
+                        log_id=f"{prefix}_measurement",
+                        columns=_sensor_columns(sensor_config),
+                        sink=sensor_logger,
+                    )
+                )
             fleet_sensors.append(
                 FleetSensor(config=sensor_config, system=sensor_system)
             )
@@ -385,4 +467,5 @@ def build_marine_fleet_diagram(
         plant=plant,
         scene_graph=scene_graph,
         vehicles=tuple(built_vehicles),
+        logs=tuple(fleet_logs),
     )
