@@ -4,9 +4,13 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -23,11 +27,15 @@ jobs:
       - run: ruff format --check .
       - run: pytest
       - run: blue-drake --version
+      - run: blue-drake doctor
       - run: blue-drake validate scenarios/mixed_marine.toml
+      - run: blue-drake validate scenarios/custom_sensors.toml
+      - run: blue-drake validate scenarios/fleet_showcase.toml
       - run: blue-drake benchmark --json
 
   package:
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -38,7 +46,49 @@ jobs:
       - run: python -m pip install 'build>=1.2,<2' 'twine>=5,<7'
       - run: python -m build
       - run: python -m twine check dist/*
-      - run: python -m pip install --force-reinstall dist/*.whl
-      - run: blue-drake --version
-      - run: blue-drake validate scenarios/custom_sensors.toml
-      - run: blue-drake benchmark
+      - name: Install wheel into a clean environment
+        run: |
+          python -m venv /tmp/blue-drake-clean
+          /tmp/blue-drake-clean/bin/python -m pip install --upgrade pip
+          /tmp/blue-drake-clean/bin/python -m pip install \
+            'drake==1.54.0' dist/*.whl
+      - name: Smoke-test the installed wheel outside the source tree
+        working-directory: /tmp
+        run: |
+          /tmp/blue-drake-clean/bin/blue-drake --version
+          /tmp/blue-drake-clean/bin/blue-drake doctor
+          /tmp/blue-drake-clean/bin/blue-drake validate \
+            "$GITHUB_WORKSPACE/scenarios/custom_sensors.toml"
+          /tmp/blue-drake-clean/bin/blue-drake benchmark
+
+  release-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: python -m pip install -e '.[dev,drake-current]'
+      - name: Run supported composition example
+        run: python examples/custom_vehicle.py
+      - name: Run short mixed and custom-sensor scenarios
+        run: |
+          blue-drake run scenarios/mixed_marine.toml \
+            --no-visualizer --realtime-rate 0 \
+            --output-dir release-artifact-mixed
+          blue-drake run scenarios/custom_sensors.toml \
+            --no-visualizer --realtime-rate 0 \
+            --output-dir release-artifact-custom
+      - name: Run five-minute simulated fleet endurance case
+        run: |
+          blue-drake run scenarios/fleet_showcase.toml \
+            --no-visualizer --realtime-rate 0 \
+            --output-dir release-artifact-fleet
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-qualification-artifacts
+          path: release-artifact-*
