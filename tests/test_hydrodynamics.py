@@ -12,6 +12,7 @@ from blue_drake.hydrodynamics import (
     glider_wing_force_B,
     submerged_box_fraction,
     surface_restoring_torque_B,
+    water_load_fraction,
 )
 from blue_drake.vehicles import glider_preset, rov_preset, usv_preset
 
@@ -116,6 +117,46 @@ def test_surface_propulsor_has_full_authority_at_nominal_waterline() -> None:
     assert emerged.force_W_N[0] == pytest.approx(0.0)
 
 
+def test_surface_water_loads_taper_to_zero_as_hull_emerges() -> None:
+    config = usv_preset()
+    height = config.dimensions_m[2]
+    assert water_load_fraction(config, body_origin_z_W_m=0.0) == pytest.approx(
+        1.0
+    )
+    assert water_load_fraction(
+        config, body_origin_z_W_m=0.25 * height
+    ) == pytest.approx(0.5)
+    assert water_load_fraction(
+        config, body_origin_z_W_m=0.5 * height
+    ) == pytest.approx(0.0)
+
+    water_relative = _wrench(
+        config,
+        body_origin_W_m=(0.0, 0.0, height),
+        translational_velocity_W_mps=(1.0, 0.0, 0.0),
+        wind_velocity_W_mps=(1.0, 0.0, 0.0),
+    )
+    assert water_relative.force_W_N == pytest.approx(np.zeros(3))
+
+
+def test_emerged_surface_vehicle_has_no_water_restoring_torque() -> None:
+    config = usv_preset()
+    roll = np.deg2rad(10.0)
+    rotation_WB = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [0.0, np.cos(roll), -np.sin(roll)],
+            [0.0, np.sin(roll), np.cos(roll)],
+        ]
+    )
+    wrench = _wrench(
+        config,
+        rotation_WB=rotation_WB,
+        body_origin_W_m=(0.0, 0.0, config.dimensions_m[2]),
+    )
+    assert wrench.torque_W_Nm == pytest.approx(np.zeros(3), abs=1e-12)
+
+
 def test_emerged_vehicle_receives_air_drag_not_water_drag() -> None:
     config = rov_preset()
     speed = 10.0
@@ -211,6 +252,77 @@ def test_drag_dissipates_water_relative_motion() -> None:
     buoyancy = np.array([0.0, 0.0, 1025.0 * config.displaced_volume_m3 * 9.81])
     drag = wrench.force_W_N - buoyancy
     assert float(drag @ velocity) < 0.0
+
+
+@pytest.mark.parametrize(
+    "config", [rov_preset(), glider_preset(), usv_preset()]
+)
+def test_unforced_dynamic_loads_are_dissipative(config) -> None:
+    position = (
+        (0.0, 0.0, 0.0) if config.kind.value == "usv" else (0.0, 0.0, -2.0)
+    )
+    linear_velocity = np.array([0.7, -0.25, 0.12])
+    angular_velocity = np.array([0.15, -0.09, 0.04])
+    static = _wrench(config, body_origin_W_m=position)
+    moving = _wrench(
+        config,
+        body_origin_W_m=position,
+        translational_velocity_W_mps=linear_velocity,
+        angular_velocity_W_radps=angular_velocity,
+    )
+    dynamic_power_W = float(
+        (moving.force_W_N - static.force_W_N) @ linear_velocity
+        + (moving.torque_W_Nm - static.torque_W_Nm) @ angular_velocity
+    )
+    assert dynamic_power_W < 0.0
+
+
+def test_marine_wrench_is_equivariant_under_world_yaw() -> None:
+    config = rov_preset()
+    yaw = np.deg2rad(63.0)
+    rotation_WQ = np.array(
+        [
+            [np.cos(yaw), -np.sin(yaw), 0.0],
+            [np.sin(yaw), np.cos(yaw), 0.0],
+            [0.0, 0.0, 1.0],
+        ]
+    )
+    velocity_W = np.array([0.7, -0.4, 0.15])
+    angular_W = np.array([0.2, -0.1, 0.05])
+    current_W = np.array([0.1, 0.05, -0.02])
+    wind_W = np.array([-0.3, 0.2, 0.0])
+    original = _wrench(
+        config,
+        translational_velocity_W_mps=velocity_W,
+        angular_velocity_W_radps=angular_W,
+        water_current_W_mps=current_W,
+        wind_velocity_W_mps=wind_W,
+        applied_wrench_B=(0.4, -0.2, 0.1, 3.0, -1.0, 0.5),
+    )
+    rotated = _wrench(
+        config,
+        rotation_WB=rotation_WQ,
+        translational_velocity_W_mps=rotation_WQ @ velocity_W,
+        angular_velocity_W_radps=rotation_WQ @ angular_W,
+        water_current_W_mps=rotation_WQ @ current_W,
+        wind_velocity_W_mps=rotation_WQ @ wind_W,
+        applied_wrench_B=(0.4, -0.2, 0.1, 3.0, -1.0, 0.5),
+    )
+    assert rotated.force_W_N == pytest.approx(rotation_WQ @ original.force_W_N)
+    assert rotated.torque_W_Nm == pytest.approx(
+        rotation_WQ @ original.torque_W_Nm
+    )
+
+
+@pytest.mark.parametrize("bad", [float("nan"), float("inf")])
+def test_buoyancy_rejects_nonfinite_environment(bad: float) -> None:
+    with pytest.raises(ValueError, match="positive and finite"):
+        buoyancy_force_N(
+            rov_preset(),
+            body_origin_z_W_m=-1.0,
+            water_density_kg_m3=bad,
+            gravity_mps2=9.81,
+        )
 
 
 def test_matching_current_produces_no_translational_drag() -> None:

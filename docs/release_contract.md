@@ -34,6 +34,20 @@ The release supports:
 The exact fidelity of each item is maintained in the
 [fidelity matrix](fidelity.md), not inferred from this list.
 
+## Intended users and decisions
+
+Blue Drake is for students who need to exercise sensor, geometry, timing, and
+vehicle-model ideas before they can afford hardware or water testing, and for
+professionals who need a fast, inexpensive plausibility check before committing
+to a higher-fidelity tool or field trial. It should expose integration mistakes,
+unit and frame errors, saturation, timing conflicts, and weak scenario
+assumptions early.
+
+A Blue Drake result is simulation evidence, not product qualification or field
+validation. The responsible next step for a safety-, performance-, or
+procurement-critical decision remains a suitable higher-fidelity model,
+bench test, tank test, or field trial.
+
 ## Explicit exclusions
 
 The release does not contain or claim:

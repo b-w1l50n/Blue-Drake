@@ -23,8 +23,11 @@ prevents positive-buoyancy vehicles from continuing into the sky.
 
 The transition assumes an upright rectangular envelope. It does not integrate
 oriented wetted geometry, model wave elevation, slamming, ventilation, spray,
-or air drag. Surface-piercing USVs continue to use their separate linearized
-waterplane model.
+or air drag. Surface-piercing USVs use a separate envelope that provides full
+water-load authority at the nominal body-origin waterline and below, then
+tapers to zero as the upright bounding box becomes fully emerged. It applies
+consistently to water drag, angular drag, restoring torque, added inertia, and
+propulsion.
 
 ## Diagonal effective inertia
 

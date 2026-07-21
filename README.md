@@ -5,6 +5,12 @@ top of [Drake](https://drake.mit.edu/). It targets surface and subsea vehicles,
 scenario-driven experiments, deterministic headless runs, and Meshcat
 visualization.
 
+It is intended for students who need an accessible way to exercise sensor and
+vehicle experiments before they can afford water testing, and for professionals
+who want a fast, inexpensive plausibility check before using higher-fidelity
+simulation or field time. Its outputs are simulation evidence, not hardware
+qualification.
+
 > **Not affiliated with Drake Sim, we're a student edit meant to expand the sim
 > to marine robotics (both surface and subsea). I'm grateful to the Drake Devs
 > for making such a great sim.**

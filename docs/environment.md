@@ -43,16 +43,17 @@ calculates the fraction below the water surface. Water buoyancy, drag, glider
 lift, and diagonal added inertia use that immersed fraction. Quadratic air drag
 uses the complementary exposed fraction.
 
-Surface-piercing USVs retain their independently linearized waterplane and
-water-drag model. Their exposed box fraction additionally receives aerodynamic
-drag. This prevents atmospheric density or wind from being silently treated as
-water properties.
+Surface-piercing USVs retain full independently linearized waterplane and
+water-load authority at the nominal body-origin waterline and below. Water
+drag, angular drag, restoring torque, added inertia, and propulsor authority
+taper together as the upright box emerges and reach zero when it is fully in
+air. The exposed box fraction additionally receives aerodynamic drag. This
+prevents atmospheric density or wind from being silently treated as water
+properties.
 
-Underwater propulsor wrenches scale with the same immersed-box fraction and
-reach zero when the body is fully emerged. Surface-vehicle propulsors retain
-full authority at the nominal waterline, then lose it as the hull leaves the
-water. The public `applied_wrench_B` input remains an unrestricted external
-load so callers can represent cranes, tethers, and test forces in either phase.
+Underwater propulsor wrenches scale with the immersed-box fraction. The public
+`applied_wrench_B` input remains an unrestricted external load so callers can
+represent cranes, tethers, and test forces in either phase.
 
 ## Aerodynamic envelope
 

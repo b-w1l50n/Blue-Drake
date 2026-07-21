@@ -106,8 +106,15 @@ def buoyancy_force_N(
 ) -> float:
     """Calculate upward hydrostatic support for the configured approximation."""
 
-    if water_density_kg_m3 <= 0.0 or gravity_mps2 <= 0.0:
-        raise ValueError("water density and gravity must be positive")
+    if (
+        water_density_kg_m3 <= 0.0
+        or gravity_mps2 <= 0.0
+        or not np.isfinite(water_density_kg_m3)
+        or not np.isfinite(gravity_mps2)
+    ):
+        raise ValueError(
+            "water density and gravity must be positive and finite"
+        )
     maximum = water_density_kg_m3 * config.displaced_volume_m3 * gravity_mps2
     if config.hydrostatic_mode is HydrostaticMode.SUBMERGED:
         return maximum * submerged_box_fraction(
@@ -144,6 +151,31 @@ def submerged_box_fraction(
     bottom_z_W_m = body_origin_z_W_m - 0.5 * height_m
     submerged_height_m = water_surface_z_W_m - bottom_z_W_m
     return float(np.clip(submerged_height_m / height_m, 0.0, 1.0))
+
+
+def water_load_fraction(
+    config: MarineVehicleConfig,
+    *,
+    body_origin_z_W_m: float,
+    water_surface_z_W_m: float = 0.0,
+) -> float:
+    """Return the authority envelope for water-dependent dynamic loads.
+
+    Submerged vehicles use the upright-box immersed fraction directly.
+    Surface-piercing vehicles have full water-load authority at their nominal
+    body-origin waterline and below, then taper to zero as the hull's bounding
+    box becomes fully emerged. This is a phase envelope, not a wetted-hull or
+    propeller-ventilation calculation.
+    """
+
+    box_fraction = submerged_box_fraction(
+        config,
+        body_origin_z_W_m=body_origin_z_W_m,
+        water_surface_z_W_m=water_surface_z_W_m,
+    )
+    if config.hydrostatic_mode is HydrostaticMode.SUBMERGED:
+        return box_fraction
+    return min(1.0, 2.0 * box_fraction)
 
 
 def aerodynamic_drag_force_B(
@@ -303,24 +335,16 @@ def compute_marine_wrench(
     relative_linear_B = rotation_BW @ (velocity_W - current_W)
     relative_air_B = rotation_BW @ (velocity_W - wind_W)
     angular_velocity_B = rotation_BW @ angular_velocity_W
-    immersion_fraction = (
-        submerged_box_fraction(
-            config,
-            body_origin_z_W_m=float(position_W[2]),
-        )
-        if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
-        else 1.0
+    immersion_fraction = water_load_fraction(
+        config,
+        body_origin_z_W_m=float(position_W[2]),
     )
     box_immersion_fraction = submerged_box_fraction(
         config,
         body_origin_z_W_m=float(position_W[2]),
     )
     exposed_fraction = 1.0 - box_immersion_fraction
-    actuator_fraction = (
-        box_immersion_fraction
-        if config.hydrostatic_mode is HydrostaticMode.SUBMERGED
-        else min(1.0, 2.0 * box_immersion_fraction)
-    )
+    actuator_fraction = immersion_fraction
     linear_drag = np.asarray(config.linear_drag_N_per_mps)
     quadratic_drag = np.asarray(config.quadratic_drag_N_per_mps2)
     drag_force_B = (
@@ -368,8 +392,9 @@ def compute_marine_wrench(
         np.asarray(config.center_of_buoyancy_B_m), buoyancy_force_B
     )
 
-    restoring_torque_B = surface_restoring_torque_B(
-        config, rotation_WB=rotation_WB
+    restoring_torque_B = (
+        surface_restoring_torque_B(config, rotation_WB=rotation_WB)
+        * immersion_fraction
     )
     control_torque_B = np.array([0.0, glider_control[1], 0.0])
     torque_W = rotation_WB @ (

@@ -19,7 +19,7 @@ a physical model.
 | Glider lift | Low-angle symmetric wing foundation | Stall, sideslip, unsteady flow |
 | Glider control | Lagged buoyancy delta and pitch-moment surrogate | Pump and movable-mass mechanics |
 | USV actuation | Generic differential propellers | Rudders, ventilation, curves |
-| USV dynamics | Linear displacement-mode foundation | Seakeeping, hull form, wind |
+| USV dynamics | Linear displacement-mode foundation with bounded emergence envelope | Seakeeping, wetted hull form, slamming |
 | Contact | Flat fixed seafloor and primitive vehicle collision geometry | Terrain, hydroelastic tuning |
 | DiveNET Sealink | Published envelope plus provisional deterministic packet schedule | Protocol, channel physics, hardware validation |
 | Bar02 / Bar30 | Hydrostatic pressure and depth | Compensation, drift, wet aging |
