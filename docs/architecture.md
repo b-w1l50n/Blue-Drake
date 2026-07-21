@@ -72,9 +72,10 @@ transmissions and stationary node positions. The CLI currently evaluates it
 from initial scenario geometry; it is not a live network or a Drake plant
 state. See [acoustic communication semantics](acoustics.md).
 
-Meshcat environment geometry is presentation only. The water-surface and
-seafloor boxes provide spatial context but do not generate waves, contact, or
-bathymetric sonar returns.
+The Meshcat water surface is presentation only and does not generate waves or
+fluid contact. The rendered flat seafloor has matching fixed collision
+geometry, and center-ray sonar uses the same analytical seafloor elevation.
+General bathymetry and terrain-dependent returns are not modeled.
 
 Vector log sinks are added to a diagram only when requested. They retain
 simulation-time state and sensor samples in memory; filesystem export remains

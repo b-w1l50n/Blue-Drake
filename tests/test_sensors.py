@@ -137,6 +137,19 @@ def test_pressure_error_changes_pressure_and_inferred_depth() -> None:
     assert measured[:3] - ideal[:3] == pytest.approx([1000.0, 0.1, -0.5])
 
 
+def test_pressure_sensor_uses_air_temperature_above_water() -> None:
+    measurement = pressure_measurement(
+        bar30_profile(),
+        sensor_z_W_m=2.0,
+        water_density_kg_m3=1025.0,
+        gravity_mps2=9.81,
+        surface_pressure_Pa=101_325.0,
+        water_temperature_C=8.0,
+        air_temperature_C=22.0,
+    )
+    assert measurement == pytest.approx([101_325.0, 0.0, 22.0, 1.0])
+
+
 def test_stationary_level_imu_reports_upward_specific_force() -> None:
     measurement = raw_imu_measurement(
         xsens_mti_630r_profile(),
@@ -196,6 +209,16 @@ def test_upward_or_out_of_range_sonar_ray_is_invalid() -> None:
     )
     assert upward == pytest.approx([100.0, 0.0])
     assert too_far == pytest.approx([100.0, 0.0])
+
+
+def test_sonar_center_ray_is_invalid_when_sensor_is_in_air() -> None:
+    result = flat_seafloor_range(
+        ping_sonar_profile(),
+        sensor_origin_W_m=(0.0, 0.0, 0.01),
+        beam_direction_W=(0.0, 0.0, -1.0),
+        seafloor_z_W_m=-10.0,
+    )
+    assert result == pytest.approx([100.0, 0.0])
 
 
 def test_mount_bias_dimension_depends_on_sensor_kind() -> None:

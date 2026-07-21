@@ -174,3 +174,17 @@ def test_out_of_range_event_is_not_delivered() -> None:
         requests=(_request("far", "a", "b"),),
     )[0]
     assert event.status is AcousticDeliveryStatus.OUT_OF_RANGE
+
+
+def test_acoustic_event_is_out_of_medium_when_endpoint_is_in_air() -> None:
+    events = schedule_transmissions(
+        DIVENET_SEALINK_3KM_OEM,
+        node_positions_W_m={"air": (0, 0, 0.01), "water": (10, 0, -1)},
+        requests=(
+            _request("air_to_water", "air", "water"),
+            _request("water_to_air", "water", "air", start_time_s=1.0),
+        ),
+    )
+    assert all(
+        event.status is AcousticDeliveryStatus.OUT_OF_MEDIUM for event in events
+    )

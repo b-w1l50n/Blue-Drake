@@ -46,6 +46,7 @@ arrival timing, and one of these outcomes:
 
 - `delivered`: within the profile range with no modeled conflict,
 - `out_of_range`: range exceeds the profile maximum,
+- `out_of_medium`: either endpoint is above the water surface,
 - `collision`: arrivals overlap at one receiver on one code channel,
 - `half_duplex`: the receiver transmits while the payload arrives, or
 - `transmit_conflict`: one source is asked to transmit overlapping payloads.
@@ -54,6 +55,11 @@ Code channels are treated as mutually orthogonal. Range is straight-line 3D
 distance, sound speed is constant, and positions do not move during schedule
 evaluation. Event ordering is deterministic and does not use wall time or
 random state.
+
+Endpoint phase currently uses each vehicle body origin as the modem-location
+proxy. An origin at `z = 0` is considered wet so a surface vehicle may carry
+the acoustic gateway. Explicit modem mount offsets and time-varying immersion
+are deferred fidelity work.
 
 ## TOML example
 

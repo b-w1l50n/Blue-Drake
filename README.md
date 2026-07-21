@@ -111,6 +111,17 @@ the dedicated showcase instead of extending the short dynamic example:
 .venv/bin/blue-drake scenarios/fleet_showcase.toml
 ```
 
+Meshcat listens only on the local machine by default. On a trusted LAN, a NUC
+can expose it deliberately and keep a stable port:
+
+```bash
+.venv/bin/blue-drake scenarios/fleet_showcase.toml \
+  --meshcat-host '*' --meshcat-port 7000
+```
+
+Then open `http://NUC_IP:7000` from the other computer. Meshcat has no Blue
+Drake authentication layer; do not expose that listener to the public internet.
+
 Validate or inspect a scenario without launching Drake:
 
 ```bash

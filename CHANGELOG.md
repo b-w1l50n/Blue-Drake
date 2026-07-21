@@ -14,6 +14,11 @@ and analytical benchmark output.
   permanent horizontal propulsion commands.
 - Separate air density and wind from water density and current, and apply an
   exposed-box aerodynamic drag envelope above the free surface.
+- Use separate air and water temperatures for pressure measurements, invalidate
+  flat-seafloor sonar above water, and report out-of-medium acoustic events.
+- Add fixed flat-seafloor collision geometry matching the rendered plane.
+- Bind Meshcat to localhost by default and provide explicit host and port flags
+  for deliberate trusted-LAN access.
 
 ## 0.1.0 - 2026-07-21
 

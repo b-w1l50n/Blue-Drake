@@ -313,6 +313,45 @@ def test_positive_buoyancy_settles_at_free_surface() -> None:
     assert -0.25 < z_W_m < 0.0
 
 
+def test_vehicle_cannot_fall_through_physical_seafloor() -> None:
+    from pydrake.math import RigidTransform
+    from pydrake.systems.analysis import Simulator
+
+    config = rov_preset()
+    seafloor_z_W_m = -2.0
+    model = build_marine_fleet_diagram(
+        {"rov_1": config},
+        seafloor_z_W_m=seafloor_z_W_m,
+    )
+    simulator = Simulator(model.diagram)
+    context = simulator.get_mutable_context()
+    plant_context = model.plant.GetMyMutableContextFromRoot(context)
+    vehicle = model.vehicle("rov_1")
+    model.plant.SetFreeBodyPose(
+        plant_context,
+        vehicle.body,
+        RigidTransform([0.0, 0.0, -1.0]),
+    )
+    model.diagram.GetInputPort("rov_1_water_current_W_mps").FixValue(
+        context, np.zeros(3)
+    )
+    model.diagram.GetInputPort("rov_1_wind_velocity_W_mps").FixValue(
+        context, np.zeros(3)
+    )
+    model.diagram.GetInputPort("rov_1_applied_wrench_B").FixValue(
+        context, [0.0, 0.0, 0.0, 0.0, 0.0, -100.0]
+    )
+    model.diagram.GetInputPort("rov_1_wrench_command_B").FixValue(
+        context, np.zeros(6)
+    )
+    simulator.Initialize()
+    simulator.AdvanceTo(5.0)
+
+    z_W_m = vehicle.body.EvalPoseInWorld(plant_context).translation()[2]
+    minimum_center_z = seafloor_z_W_m + 0.5 * config.dimensions_m[2]
+    assert z_W_m >= minimum_center_z - 0.02
+
+
 def test_bounded_actuator_command_moves_vehicle_and_reports_thrust() -> None:
     from pydrake.math import RigidTransform
     from pydrake.systems.analysis import Simulator

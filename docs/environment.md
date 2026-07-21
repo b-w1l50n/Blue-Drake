@@ -13,6 +13,7 @@ water_density_kg_m3 = 1025.0
 air_density_kg_m3 = 1.225
 surface_pressure_Pa = 101325.0
 water_temperature_C = 12.0
+air_temperature_C = 18.0
 ```
 
 Water current and wind are independent world-frame inputs for each vehicle:
@@ -28,6 +29,12 @@ wind_velocity_W_mps = [4.0, -1.0, 0.0]
 
 Both default to zero. They are steady inputs in schema version 1; gusts,
 profiles, and time schedules are not yet modeled.
+
+The phase boundary also applies to environmental sensors and acoustic links.
+Pressure sensors above the surface use atmospheric pressure and air
+temperature; flat-seafloor sonar is invalid above the surface; and acoustic
+events are `out_of_medium` when either vehicle origin is above it. A surface
+vehicle origin at exactly `z = 0` remains a wet acoustic endpoint.
 
 ## Phase fractions
 

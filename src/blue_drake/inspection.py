@@ -34,6 +34,7 @@ def scenario_summary(scenario: MarineScenario) -> dict[str, Any]:
             "air_density_kg_m3": scenario.air_density_kg_m3,
             "surface_pressure_Pa": scenario.surface_pressure_Pa,
             "water_temperature_C": scenario.water_temperature_C,
+            "air_temperature_C": scenario.air_temperature_C,
             "seafloor_z_W_m": scenario.seafloor_z_W_m,
             "world_extent_m": scenario.world_extent_m,
         },

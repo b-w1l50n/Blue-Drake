@@ -129,6 +129,24 @@ def _register_vehicle_geometry(
     )
 
 
+def _register_seafloor_collision(
+    plant,
+    *,
+    seafloor_z_W_m: float,
+    world_extent_m: float,
+) -> None:
+    """Register the rendered flat seafloor as fixed collision geometry."""
+
+    thickness_m = 0.1
+    plant.RegisterCollisionGeometry(
+        plant.world_body(),
+        RigidTransform([0.0, 0.0, seafloor_z_W_m - 0.5 * thickness_m]),
+        Box(world_extent_m, world_extent_m, thickness_m),
+        "seafloor_collision",
+        CoulombFriction(0.8, 0.6),
+    )
+
+
 def _state_columns() -> tuple[str, ...]:
     return (
         "quaternion_w_WB",
@@ -207,6 +225,7 @@ def build_marine_fleet_diagram(
     gravity_mps2: float = 9.81,
     surface_pressure_Pa: float = 101_325.0,
     water_temperature_C: float = 10.0,
+    air_temperature_C: float = 15.0,
     seafloor_z_W_m: float = -50.0,
     world_extent_m: float = 100.0,
     logging_period_s: float | None = None,
@@ -233,8 +252,10 @@ def build_marine_fleet_diagram(
             "air and water density, gravity, and surface pressure must be "
             "positive and finite"
         )
-    if not math.isfinite(water_temperature_C):
-        raise ValueError("water_temperature_C must be finite")
+    if not math.isfinite(water_temperature_C) or not math.isfinite(
+        air_temperature_C
+    ):
+        raise ValueError("air and water temperature must be finite")
     if not math.isfinite(seafloor_z_W_m) or seafloor_z_W_m >= 0.0:
         raise ValueError("seafloor_z_W_m must be finite and below zero")
     if world_extent_m <= 0.0 or not math.isfinite(world_extent_m):
@@ -271,6 +292,11 @@ def build_marine_fleet_diagram(
         _register_vehicle_geometry(plant, body, config)
         bodies.append(body)
         model_instances.append(model_instance)
+    _register_seafloor_collision(
+        plant,
+        seafloor_z_W_m=seafloor_z_W_m,
+        world_extent_m=world_extent_m,
+    )
     plant.Finalize()
 
     concatenator = builder.AddSystem(SpatialForceConcatenator(len(vehicles)))
@@ -402,6 +428,7 @@ def build_marine_fleet_diagram(
                 gravity_mps2=gravity_mps2,
                 surface_pressure_Pa=surface_pressure_Pa,
                 water_temperature_C=water_temperature_C,
+                air_temperature_C=air_temperature_C,
                 seafloor_z_W_m=seafloor_z_W_m,
             )
             sensor_system.set_name(

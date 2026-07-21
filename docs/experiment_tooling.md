@@ -55,6 +55,18 @@ explicit ROV and UUV trim loads and no continuous horizontal propulsion:
 blue-drake scenarios/fleet_showcase.toml
 ```
 
+Meshcat binds to localhost by default. For deliberate access from another
+computer on a trusted LAN, use a fixed port:
+
+```bash
+blue-drake scenarios/fleet_showcase.toml \
+  --meshcat-host '*' --meshcat-port 7000
+```
+
+Open `http://NUC_IP:7000` from the client. Do not forward that port to the
+public internet. Across an untrusted network, leave the localhost default and
+use an SSH tunnel instead.
+
 Machine-readable output uses JSON with stable unit-bearing field names where
 applicable. It is an inspection interface, not a vendor protocol.
 

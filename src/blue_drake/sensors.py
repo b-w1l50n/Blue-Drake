@@ -545,6 +545,7 @@ def pressure_measurement(
     gravity_mps2: float,
     surface_pressure_Pa: float,
     water_temperature_C: float,
+    air_temperature_C: float | None = None,
     error: ArrayLike = (0.0, 0.0),
 ) -> Vector:
     """Return pressure, inferred depth, temperature, and valid flag."""
@@ -555,8 +556,11 @@ def pressure_measurement(
         ("surface_pressure_Pa", surface_pressure_Pa),
     ):
         _positive(name, value)
-    if not math.isfinite(sensor_z_W_m) or not math.isfinite(
-        water_temperature_C
+    if air_temperature_C is None:
+        air_temperature_C = water_temperature_C
+    if not all(
+        math.isfinite(value)
+        for value in (sensor_z_W_m, water_temperature_C, air_temperature_C)
     ):
         raise ValueError("sensor position and temperature must be finite")
     error = _vector("error", error, 2)
@@ -565,7 +569,10 @@ def pressure_measurement(
         water_density_kg_m3 * gravity_mps2 * true_depth
     )
     measured_pressure = true_pressure + error[0]
-    measured_temperature = water_temperature_C + error[1]
+    medium_temperature_C = (
+        water_temperature_C if sensor_z_W_m <= 0.0 else air_temperature_C
+    )
+    measured_temperature = medium_temperature_C + error[1]
     valid = 0.0 <= measured_pressure <= profile.maximum_pressure_Pa
     clipped_pressure = float(
         np.clip(measured_pressure, 0.0, profile.maximum_pressure_Pa)
@@ -628,6 +635,7 @@ def flat_seafloor_range(
     sensor_origin_W_m: ArrayLike,
     beam_direction_W: ArrayLike,
     seafloor_z_W_m: float,
+    water_surface_z_W_m: float = 0.0,
     range_error_m: float = 0.0,
 ) -> Vector:
     """Intersect a sonar center ray with a horizontal seafloor plane.
@@ -641,8 +649,19 @@ def flat_seafloor_range(
     norm = np.linalg.norm(direction)
     if not np.isclose(norm, 1.0, atol=1e-9):
         raise ValueError("beam_direction_W must be a unit vector")
-    if not math.isfinite(seafloor_z_W_m) or not math.isfinite(range_error_m):
-        raise ValueError("seafloor and range error must be finite")
+    if not all(
+        math.isfinite(value)
+        for value in (
+            seafloor_z_W_m,
+            water_surface_z_W_m,
+            range_error_m,
+        )
+    ):
+        raise ValueError(
+            "seafloor, water surface, and range error must be finite"
+        )
+    if origin[2] > water_surface_z_W_m:
+        return np.array([profile.maximum_range_m, 0.0])
     if direction[2] >= -1e-12:
         return np.array([profile.maximum_range_m, 0.0])
     distance = (seafloor_z_W_m - origin[2]) / direction[2]

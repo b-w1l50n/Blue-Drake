@@ -7,6 +7,7 @@ water_density_kg_m3 = 1025.0
 air_density_kg_m3 = 1.225
 surface_pressure_Pa = 101325.0
 water_temperature_C = 12.0
+air_temperature_C = 18.0
 seafloor_z_W_m = -20.0
 world_extent_m = 80.0
 

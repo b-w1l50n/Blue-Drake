@@ -16,6 +16,7 @@ def test_scenario_summary_is_json_ready_and_preserves_units() -> None:
     assert summary["schema_version"] == 1
     assert summary["environment"]["seafloor_z_W_m"] == -20.0
     assert summary["environment"]["air_density_kg_m3"] == 1.225
+    assert summary["environment"]["air_temperature_C"] == 18.0
     assert {vehicle["kind"] for vehicle in summary["vehicles"]} == {
         "glider",
         "rov",

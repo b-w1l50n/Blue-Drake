@@ -63,6 +63,7 @@ class PressureSensorSystem(_MountedSensorSystem):
         gravity_mps2: float,
         surface_pressure_Pa: float,
         water_temperature_C: float,
+        air_temperature_C: float,
     ) -> None:
         if not isinstance(config.profile, PressureSensorProfile):
             raise TypeError("PressureSensorSystem requires a pressure profile")
@@ -72,6 +73,7 @@ class PressureSensorSystem(_MountedSensorSystem):
         self._gravity_mps2 = gravity_mps2
         self._surface_pressure_Pa = surface_pressure_Pa
         self._water_temperature_C = water_temperature_C
+        self._air_temperature_C = air_temperature_C
         self.error_input = self.DeclareVectorInputPort(
             "error_pressure_Pa_temperature_C", BasicVector(2)
         )
@@ -94,6 +96,7 @@ class PressureSensorSystem(_MountedSensorSystem):
             gravity_mps2=self._gravity_mps2,
             surface_pressure_Pa=self._surface_pressure_Pa,
             water_temperature_C=self._water_temperature_C,
+            air_temperature_C=self._air_temperature_C,
             error=error,
         )
 
@@ -273,6 +276,7 @@ def add_sensor_system(
     gravity_mps2: float,
     surface_pressure_Pa: float,
     water_temperature_C: float,
+    air_temperature_C: float,
     seafloor_z_W_m: float,
 ):
     """Add the Drake adapter appropriate for a mounted sensor profile."""
@@ -287,6 +291,7 @@ def add_sensor_system(
             gravity_mps2=gravity_mps2,
             surface_pressure_Pa=surface_pressure_Pa,
             water_temperature_C=water_temperature_C,
+            air_temperature_C=air_temperature_C,
         )
     elif config.profile.kind is SensorKind.IMU:
         system = RawImuSensorSystem(

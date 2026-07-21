@@ -35,6 +35,13 @@ specific force is evaluated at the mounted sensor origin and includes rigid
 body tangential and centripetal acceleration. Sonar intersects only the
 center ray (`+x` in S) with a horizontal seafloor plane.
 
+At or below the free surface, pressure measurements use hydrostatic water
+pressure and `water_temperature_C`. Above it, they report surface pressure,
+zero inferred depth, and `air_temperature_C`. A flat-seafloor sonar whose
+mounted origin is above the free surface reports its maximum range with
+`valid = 0`; Blue Drake does not pretend that an airborne acoustic ray is an
+underwater return.
+
 ## Hardware-informed profiles
 
 Sources were retrieved on 2026-07-21.

@@ -197,6 +197,7 @@ class MarineScenario:
     air_density_kg_m3: float = 1.225
     surface_pressure_Pa: float = 101_325.0
     water_temperature_C: float = 10.0
+    air_temperature_C: float = 15.0
     seafloor_z_W_m: float = -50.0
     world_extent_m: float = 100.0
 
@@ -231,8 +232,10 @@ class MarineScenario:
             value = getattr(self, name)
             if value <= 0.0 or not math.isfinite(value):
                 raise ValueError(f"{name} must be positive and finite")
-        if not math.isfinite(self.water_temperature_C):
-            raise ValueError("water_temperature_C must be finite")
+        if not math.isfinite(self.water_temperature_C) or not math.isfinite(
+            self.air_temperature_C
+        ):
+            raise ValueError("air and water temperature must be finite")
         if not math.isfinite(self.seafloor_z_W_m) or self.seafloor_z_W_m >= 0.0:
             raise ValueError("seafloor_z_W_m must be finite and below zero")
         if self.world_extent_m <= 0.0 or not math.isfinite(self.world_extent_m):
@@ -663,6 +666,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
         "air_density_kg_m3",
         "surface_pressure_Pa",
         "water_temperature_C",
+        "air_temperature_C",
         "seafloor_z_W_m",
         "world_extent_m",
         "sensor_profiles",
@@ -727,6 +731,7 @@ def load_scenario(path: str | Path) -> MarineScenario:
         air_density_kg_m3=float(raw.get("air_density_kg_m3", 1.225)),
         surface_pressure_Pa=float(raw.get("surface_pressure_Pa", 101_325.0)),
         water_temperature_C=float(raw.get("water_temperature_C", 10.0)),
+        air_temperature_C=float(raw.get("air_temperature_C", 15.0)),
         seafloor_z_W_m=float(raw.get("seafloor_z_W_m", -50.0)),
         world_extent_m=float(raw.get("world_extent_m", 100.0)),
     )

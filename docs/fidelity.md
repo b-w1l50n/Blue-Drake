@@ -20,14 +20,14 @@ a physical model.
 | Glider control | Lagged buoyancy delta and pitch-moment surrogate | Pump and movable-mass mechanics |
 | USV actuation | Generic differential propellers | Rudders, ventilation, curves |
 | USV dynamics | Linear displacement-mode foundation | Seakeeping, hull form, wind |
-| Contact | Primitive collision geometry | Hydroelastic tuning |
+| Contact | Flat fixed seafloor and primitive vehicle collision geometry | Terrain, hydroelastic tuning |
 | DiveNET Sealink | Published envelope plus provisional deterministic packet schedule | Protocol, channel physics, hardware validation |
 | Bar02 / Bar30 | Hydrostatic pressure and depth | Compensation, drift, wet aging |
 | Xsens MTi-630R | Mounted raw IMU envelope | Proprietary fusion, magnetics, clock |
 | Xsens Avior AHRS | Mounted raw IMU envelope | Proprietary fusion, magnetics, clock |
-| Ping Sonar | Flat-seafloor center ray | Beam return, confidence, profile |
+| Ping Sonar | Wet-only flat-seafloor center ray | Beam return, confidence, profile |
 | Cerulean sonars | Profiles plus center ray | Point clouds, imagery, onboard processing |
-| Acoustic events | Stationary range, timing, collision, and half-duplex diagnostics | BER/PER, multipath, Doppler, queues, moving links |
+| Acoustic events | Wet-endpoint stationary range, timing, collision, and half-duplex diagnostics | Mount offsets, BER/PER, multipath, Doppler, queues, moving links |
 | Meshcat marine world | Water plane and flat seafloor context | Bathymetry, waves, shoreline, water optics |
 | Custom physical profiles | User-defined envelope with existing pressure, raw-IMU, or center-ray physics | Automatic calibration, validation of user sources |
 | Custom vector sensors | Explicit bounded value/error ports with channel metadata | Physical generation, unit conversion, timing, device protocols |

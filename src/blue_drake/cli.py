@@ -50,6 +50,17 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--realtime-rate", type=float, default=1.0)
     run.add_argument("--no-visualizer", action="store_true")
     run.add_argument(
+        "--meshcat-host",
+        default="localhost",
+        help="Meshcat bind host; use '*' to opt into all network interfaces",
+    )
+    run.add_argument(
+        "--meshcat-port",
+        type=int,
+        default=None,
+        help="fixed Meshcat port; default searches from 7000",
+    )
+    run.add_argument(
         "--output-dir",
         help="create a new directory containing deterministic CSV logs",
     )
@@ -106,6 +117,12 @@ def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             parser.error("--log-period must be positive and finite")
         if args.log_period is not None and args.output_dir is None:
             parser.error("--log-period requires --output-dir")
+        if not args.meshcat_host.strip():
+            parser.error("--meshcat-host cannot be empty")
+        if args.meshcat_port is not None and not (
+            args.meshcat_port == 0 or 1024 <= args.meshcat_port <= 65535
+        ):
+            parser.error("--meshcat-port must be 0 or in [1024, 65535]")
     return args
 
 
@@ -272,7 +289,7 @@ def _print_final_state(model, context, plant_context) -> None:
 
 
 def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
-    from pydrake.geometry import StartMeshcat
+    from pydrake.geometry import Meshcat, MeshcatParams
     from pydrake.systems.analysis import Simulator
 
     from blue_drake.run_artifacts import write_run_artifacts
@@ -282,7 +299,12 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
         raise FileExistsError(
             f"output directory already exists: {args.output_dir}"
         )
-    meshcat = None if args.no_visualizer else StartMeshcat()
+    meshcat = None
+    if not args.no_visualizer:
+        params = MeshcatParams()
+        params.host = args.meshcat_host
+        params.port = args.meshcat_port
+        meshcat = Meshcat(params)
     logging_period_s = (
         None
         if args.output_dir is None
@@ -299,6 +321,7 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
         gravity_mps2=scenario.gravity_mps2,
         surface_pressure_Pa=scenario.surface_pressure_Pa,
         water_temperature_C=scenario.water_temperature_C,
+        air_temperature_C=scenario.air_temperature_C,
         seafloor_z_W_m=scenario.seafloor_z_W_m,
         world_extent_m=scenario.world_extent_m,
         logging_period_s=logging_period_s,
@@ -313,6 +336,8 @@ def _run(args: argparse.Namespace, scenario: MarineScenario) -> int:
     _print_initial_configuration(scenario)
     if meshcat is not None:
         print(f"Meshcat: {meshcat.web_url()}")
+        if args.meshcat_host == "*":
+            print("Meshcat LAN access: replace localhost with this host's IP")
     simulator.AdvanceTo(duration_s)
     _print_final_state(model, context, plant_context)
     if args.output_dir is not None:

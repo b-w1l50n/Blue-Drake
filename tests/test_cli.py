@@ -18,6 +18,30 @@ def test_legacy_scenario_argument_maps_to_run_command() -> None:
     args = _parse_args([str(MIXED_SCENARIO), "--no-visualizer"])
     assert args.command == "run"
     assert args.scenario == str(MIXED_SCENARIO)
+    assert args.meshcat_host == "localhost"
+    assert args.meshcat_port is None
+
+
+def test_meshcat_network_binding_requires_explicit_run_options() -> None:
+    args = _parse_args(
+        [
+            "run",
+            str(MIXED_SCENARIO),
+            "--meshcat-host",
+            "*",
+            "--meshcat-port",
+            "7000",
+        ]
+    )
+    assert args.meshcat_host == "*"
+    assert args.meshcat_port == 7000
+
+
+def test_meshcat_rejects_privileged_port(capsys) -> None:
+    with pytest.raises(SystemExit) as exc_info:
+        _parse_args(["run", str(MIXED_SCENARIO), "--meshcat-port", "80"])
+    assert exc_info.value.code == 2
+    assert "--meshcat-port" in capsys.readouterr().err
 
 
 def test_package_version_has_release_candidate_value() -> None:
