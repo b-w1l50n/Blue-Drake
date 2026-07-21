@@ -1,6 +1,6 @@
 # Actuation and wrench allocation
 
-Milestone 2 provides a generic fixed-direction marine actuator model. It is a
+Blue Drake provides a generic fixed-direction marine actuator model. It is a
 developer-facing command boundary, not a vehicle controller or a
 manufacturer-calibrated propulsor model.
 
@@ -62,7 +62,7 @@ model composition. It must not be used to claim actuator fidelity.
 
 ## Preset capability
 
-| Vehicle | Milestone-2 layout | Achievable fixed-actuator subspace |
+| Vehicle | Reference layout | Achievable fixed-actuator subspace |
 |---|---|---|
 | ROV | Four horizontal and four vertical thrusters | Six-axis wrench |
 | UUV | One stern propeller | Surge only |

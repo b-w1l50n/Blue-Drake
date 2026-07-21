@@ -8,8 +8,8 @@ from blue_drake.validation import run_validation_suite
 
 def test_analytical_validation_suite_passes() -> None:
     report = run_validation_suite()
-    assert report.benchmark_schema_version == 1
-    assert len(report.checks) == 10
+    assert report.benchmark_schema_version == 2
+    assert len(report.checks) == 11
     assert report.passed
     assert {check.check_id for check in report.checks} == {
         "submerged-archimedes",
@@ -22,13 +22,19 @@ def test_analytical_validation_suite_passes() -> None:
         "hydrostatic-pressure",
         "acoustic-ideal-latency",
         "rov-thruster-geometry",
+        "uuv-stern-propeller-geometry",
     }
+    subjects = {check.subject_id for check in report.checks}
+    assert {"rov", "uuv", "glider", "usv"} <= subjects
+    assert all(check.evidence_type == "analytical" for check in report.checks)
+    assert all(check.parameter_provenance for check in report.checks)
 
 
 def test_benchmark_cli_emits_machine_readable_evidence(capsys) -> None:
     assert main(["benchmark", "--json"]) == 0
     result = json.loads(capsys.readouterr().out)
-    assert result["benchmark_schema_version"] == 1
+    assert result["benchmark_schema_version"] == 2
     assert result["passed"] is True
-    assert result["check_count"] == 10
+    assert result["check_count"] == 11
     assert all(check["passed"] for check in result["checks"])
+    assert all("parameter_provenance" in check for check in result["checks"])

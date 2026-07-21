@@ -1,6 +1,6 @@
 # Acoustic communication semantics
 
-Milestone 5 adds a deterministic packet-schedule abstraction for experiments
+Blue Drake provides a deterministic packet-schedule abstraction for experiments
 that need acoustic timing and interference without a hardware-in-the-loop modem.
 It does not emulate a vendor protocol, generate packet contents, or open a
 network connection.

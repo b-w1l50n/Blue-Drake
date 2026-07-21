@@ -8,6 +8,8 @@ and analytical benchmark output.
 
 - Apply one bounded emergence envelope to all USV water-dependent loads,
   eliminating water drag, restoring torque, and added inertia in air.
+- Add machine-readable benchmark subjects, evidence types, provenance and
+  sources, plus an analytical UUV propulsion reference case.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface

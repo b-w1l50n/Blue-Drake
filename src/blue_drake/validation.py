@@ -12,7 +12,11 @@ from blue_drake.acoustics import (
     AcousticChannelConfig,
     estimate_transmission,
 )
-from blue_drake.actuators import rov_actuator_preset, wrench_from_thrusts
+from blue_drake.actuators import (
+    rov_actuator_preset,
+    uuv_actuator_preset,
+    wrench_from_thrusts,
+)
 from blue_drake.hydrodynamics import (
     MarineWrench,
     aerodynamic_drag_force_B,
@@ -21,7 +25,11 @@ from blue_drake.hydrodynamics import (
     effective_inertia_wrench,
     glider_wing_force_B,
 )
-from blue_drake.sensors import bar30_profile, pressure_measurement
+from blue_drake.sensors import (
+    ParameterProvenance,
+    bar30_profile,
+    pressure_measurement,
+)
 from blue_drake.vehicles import glider_preset, rov_preset, usv_preset
 
 
@@ -37,6 +45,43 @@ class ValidationCheck:
     unit: str
     absolute_tolerance: float = 1e-10
     relative_tolerance: float = 1e-10
+    subject_id: str = "foundation"
+    evidence_type: str = "analytical"
+    parameter_provenance: tuple[str, ...] = ("assumed",)
+    source_urls: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.check_id.strip() or not self.subject_id.strip():
+            raise ValueError("validation check and subject IDs cannot be empty")
+        if not self.description.strip() or not self.equation.strip():
+            raise ValueError("validation description and equation are required")
+        if not self.unit.strip():
+            raise ValueError("validation unit is required")
+        if not all(
+            math.isfinite(value)
+            for value in (
+                self.expected,
+                self.observed,
+                self.absolute_tolerance,
+                self.relative_tolerance,
+            )
+        ):
+            raise ValueError("validation values and tolerances must be finite")
+        if self.absolute_tolerance < 0.0 or self.relative_tolerance < 0.0:
+            raise ValueError("validation tolerances must be nonnegative")
+        if self.evidence_type != "analytical":
+            raise ValueError("unsupported validation evidence_type")
+        provenance = tuple(
+            ParameterProvenance(value).value
+            for value in self.parameter_provenance
+        )
+        if not provenance:
+            raise ValueError("parameter_provenance cannot be empty")
+        object.__setattr__(self, "parameter_provenance", provenance)
+        urls = tuple(self.source_urls)
+        if any(not url.startswith("https://") for url in urls):
+            raise ValueError("validation source URLs must use https")
+        object.__setattr__(self, "source_urls", urls)
 
     @property
     def absolute_error(self) -> float:
@@ -71,6 +116,14 @@ class ValidationReport:
     benchmark_schema_version: int
     checks: tuple[ValidationCheck, ...]
 
+    def __post_init__(self) -> None:
+        if self.benchmark_schema_version != 2:
+            raise ValueError("unsupported benchmark schema version")
+        object.__setattr__(self, "checks", tuple(self.checks))
+        check_ids = [check.check_id for check in self.checks]
+        if not check_ids or len(check_ids) != len(set(check_ids)):
+            raise ValueError("validation check IDs must be nonempty and unique")
+
     @property
     def passed(self) -> bool:
         """Return true only when every benchmark passes."""
@@ -103,6 +156,7 @@ def _submerged_buoyancy_check() -> ValidationCheck:
             gravity_mps2=gravity,
         ),
         unit="N",
+        subject_id="rov",
     )
 
 
@@ -125,6 +179,7 @@ def _free_surface_buoyancy_check() -> ValidationCheck:
         expected=0.5,
         observed=observed_support / full_support,
         unit="ratio",
+        subject_id="rov",
     )
 
 
@@ -148,6 +203,7 @@ def _air_drag_check() -> ValidationCheck:
         expected=expected,
         observed=float(force[0]),
         unit="N",
+        subject_id="rov",
     )
 
 
@@ -172,6 +228,7 @@ def _surge_drag_check() -> ValidationCheck:
         expected=expected,
         observed=float(wrench.force_W_N[0]),
         unit="N",
+        subject_id="rov",
     )
 
 
@@ -195,6 +252,7 @@ def _surface_heave_check() -> ValidationCheck:
         expected=expected,
         observed=support,
         unit="N",
+        subject_id="usv",
     )
 
 
@@ -217,6 +275,7 @@ def _added_mass_check() -> ValidationCheck:
         / (config.dry_mass_kg + config.added_mass_diagonal_kg[0]),
         observed=float(corrected.force_W_N[0] / config.dry_mass_kg),
         unit="m/s^2",
+        subject_id="rov",
     )
 
 
@@ -241,6 +300,7 @@ def _glider_scaling_check() -> ValidationCheck:
         expected=4.0,
         observed=float(np.linalg.norm(fast) / np.linalg.norm(slow)),
         unit="ratio",
+        subject_id="glider",
     )
 
 
@@ -264,6 +324,9 @@ def _pressure_check() -> ValidationCheck:
         expected=surface_pressure + density * gravity * depth,
         observed=float(measurement[0]),
         unit="Pa",
+        subject_id="blue-robotics-bar30",
+        parameter_provenance=("published", "assumed"),
+        source_urls=(bar30_profile().source_url,),
     )
 
 
@@ -287,6 +350,9 @@ def _acoustic_timing_check() -> ValidationCheck:
         expected=expected,
         observed=estimate.latency_s,
         unit="s",
+        subject_id="divenet-sealink-3km-oem",
+        parameter_provenance=("published", "assumed"),
+        source_urls=(DIVENET_SEALINK_3KM_OEM.source_url,),
     )
 
 
@@ -302,6 +368,22 @@ def _actuator_geometry_check() -> ValidationCheck:
         expected=expected,
         observed=float(wrench[3]),
         unit="N",
+        subject_id="rov",
+    )
+
+
+def _uuv_propulsion_check() -> ValidationCheck:
+    config = uuv_actuator_preset()
+    commanded_thrust_N = 12.0
+    wrench = wrench_from_thrusts(config, [commanded_thrust_N])
+    return ValidationCheck(
+        check_id="uuv-stern-propeller-geometry",
+        description="The axial stern propeller produces pure body surge.",
+        equation="wrench_B = [r x (T*d), T*d], d = +x",
+        expected=commanded_thrust_N,
+        observed=float(wrench[3]),
+        unit="N",
+        subject_id="uuv",
     )
 
 
@@ -313,7 +395,7 @@ def run_validation_suite() -> ValidationReport:
     """
 
     return ValidationReport(
-        benchmark_schema_version=1,
+        benchmark_schema_version=2,
         checks=(
             _submerged_buoyancy_check(),
             _free_surface_buoyancy_check(),
@@ -325,5 +407,6 @@ def run_validation_suite() -> ValidationReport:
             _pressure_check(),
             _acoustic_timing_check(),
             _actuator_geometry_check(),
+            _uuv_propulsion_check(),
         ),
     )

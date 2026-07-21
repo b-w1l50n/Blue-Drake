@@ -1,6 +1,6 @@
 # Scenario and experiment tooling
 
-Milestone 7 adds lightweight configuration tools and deterministic run
+Blue Drake provides lightweight configuration tools and deterministic run
 artifacts. Validation, inspection, and catalog commands do not import Drake,
 start Meshcat, or run a simulation.
 

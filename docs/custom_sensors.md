@@ -1,6 +1,6 @@
 # Custom sensor profiles and supplied values
 
-Milestone 6 lets a scenario declare sensor profiles without changing Python
+Blue Drake lets a scenario declare sensor profiles without changing Python
 code. A declaration is either a custom envelope for an existing transparent
 physical model or an explicitly supplied numeric vector. These are different
 semantics and Blue Drake keeps them visibly separate.

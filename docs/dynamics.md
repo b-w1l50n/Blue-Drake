@@ -1,6 +1,6 @@
 # Marine dynamics foundations
 
-Milestone 4 extends the rigid-body foundation with three deliberately narrow
+Blue Drake's rigid-body foundation includes three deliberately narrow
 models: diagonal effective inertia, low-angle glider lift and buoyancy control,
 and linearized surface attitude stiffness. The preset coefficients are
 illustrative engineering assumptions. They are not identified system
