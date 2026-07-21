@@ -151,6 +151,20 @@ class MarineVehicleConfig:
             if any(item < 0.0 for item in getattr(self, name)):
                 raise ValueError(f"{name} cannot contain negative values")
 
+        inertia = self.dry_inertia_diagonal_kg_m2
+        if any(
+            inertia[index] > inertia[(index + 1) % 3] + inertia[(index + 2) % 3]
+            for index in range(3)
+        ):
+            raise ValueError(
+                "dry_inertia_diagonal_kg_m2 must satisfy triangle inequalities"
+            )
+        half_dimensions = np.asarray(self.dimensions_m) / 2.0
+        if np.any(np.abs(self.center_of_buoyancy_B_m) > half_dimensions):
+            raise ValueError(
+                "center_of_buoyancy_B_m must lie within the body envelope"
+            )
+
         color = tuple(float(item) for item in self.color_rgba)
         if len(color) != 4 or not all(0.0 <= item <= 1.0 for item in color):
             raise ValueError("color_rgba must contain four values in [0, 1]")

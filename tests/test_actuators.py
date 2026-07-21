@@ -84,3 +84,27 @@ def test_usv_differential_thrust_spans_surge_and_yaw() -> None:
     assert surge.achieved_wrench_B[3] > 19.0
     assert surge.residual_wrench_B[1] > 0.0
     assert yaw.thrusts_N == pytest.approx([-10.0, 10.0])
+
+
+@pytest.mark.parametrize(
+    "bank",
+    [rov_actuator_preset(), uuv_actuator_preset(), usv_actuator_preset()],
+)
+def test_allocator_satisfies_bound_constrained_optimality(bank) -> None:
+    generator = np.random.default_rng(147)
+    allocation = bank.allocation_matrix
+    weights = np.asarray(bank.wrench_weights)
+    weighted_matrix = weights[:, None] * allocation
+    for _ in range(100):
+        desired = generator.uniform(-200.0, 200.0, 6)
+        result = allocate_wrench(bank, desired)
+        thrusts = result.thrusts_N
+        gradient = weighted_matrix.T @ (
+            weighted_matrix @ thrusts - weights * desired
+        )
+        at_lower = np.isclose(thrusts, bank.minimum_thrusts_N, atol=1e-8)
+        at_upper = np.isclose(thrusts, bank.maximum_thrusts_N, atol=1e-8)
+        free = ~(at_lower | at_upper)
+        assert np.all(gradient[at_lower] >= -1e-8)
+        assert np.all(gradient[at_upper] <= 1e-8)
+        assert gradient[free] == pytest.approx(0.0, abs=1e-8)

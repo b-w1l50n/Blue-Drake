@@ -102,6 +102,20 @@ def _number(name: str, value: Any) -> float:
     return result
 
 
+def _box_vertical_half_extent_m(
+    config: MarineVehicleConfig, rpy_deg: Vector3
+) -> float:
+    """Return the world-z half extent of an oriented body bounding box."""
+
+    roll, pitch, _ = (math.radians(value) for value in rpy_deg)
+    length, width, height = config.dimensions_m
+    return 0.5 * (
+        abs(math.sin(pitch)) * length
+        + abs(math.cos(pitch) * math.sin(roll)) * width
+        + abs(math.cos(pitch) * math.cos(roll)) * height
+    )
+
+
 @dataclass(frozen=True)
 class ScenarioVehicle:
     """One configured vehicle and its initial simulation inputs."""
@@ -131,11 +145,14 @@ class ScenarioVehicle:
             object.__setattr__(
                 self, name, _vector(name, getattr(self, name), size)
             )
-        if (
-            self.config.kind is VehicleKind.USV
-            and abs(self.initial_position_W_m[2]) > 0.25
-        ):
-            raise ValueError("USV body origin must start near the waterline")
+        if self.config.kind is VehicleKind.USV:
+            half_height = _box_vertical_half_extent_m(
+                self.config, self.initial_rpy_deg
+            )
+            if not -half_height < self.initial_position_W_m[2] < half_height:
+                raise ValueError(
+                    "USV bounding box must initially cross the waterline"
+                )
         if (
             self.config.kind is not VehicleKind.USV
             and self.initial_position_W_m[2] >= 0.0
@@ -240,6 +257,16 @@ class MarineScenario:
             raise ValueError("seafloor_z_W_m must be finite and below zero")
         if self.world_extent_m <= 0.0 or not math.isfinite(self.world_extent_m):
             raise ValueError("world_extent_m must be positive and finite")
+        for vehicle in self.vehicles:
+            half_height = _box_vertical_half_extent_m(
+                vehicle.config, vehicle.initial_rpy_deg
+            )
+            bottom_z_W_m = vehicle.initial_position_W_m[2] - half_height
+            if bottom_z_W_m < self.seafloor_z_W_m:
+                raise ValueError(
+                    f"vehicle {vehicle.vehicle_id} initially intersects "
+                    "the seafloor"
+                )
         vehicle_id_set = set(vehicle_ids)
         for request in self.acoustic.transmissions:
             if (

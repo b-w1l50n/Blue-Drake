@@ -17,6 +17,11 @@ Omitting `schema_version` is interpreted as version 1 for compatibility with
 earlier Blue Drake scenarios. Unknown versions are rejected rather than being
 silently reinterpreted.
 
+Initial geometry is validated before Drake is imported. A USV bounding box
+must cross the mean waterline, and no oriented vehicle bounding box may begin
+intersecting the configured flat seafloor. These checks turn common setup
+mistakes into deterministic configuration errors instead of contact impulses.
+
 ## CLI workflows
 
 Validate a scenario:

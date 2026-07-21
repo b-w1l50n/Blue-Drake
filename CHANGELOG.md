@@ -10,6 +10,8 @@ and analytical benchmark output.
   eliminating water drag, restoring torque, and added inertia in air.
 - Add machine-readable benchmark subjects, evidence types, provenance and
   sources, plus an analytical UUV propulsion reference case.
+- Reject physically impossible dry-inertia diagonals, out-of-envelope centers
+  of buoyancy, airborne USV starts, and initial seafloor intersections.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface

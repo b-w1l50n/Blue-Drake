@@ -146,6 +146,42 @@ wrench_command_B = [0, 0, 0, 1, 0, 0]
         load_scenario(path)
 
 
+def test_surface_vehicle_must_initially_cross_waterline(tmp_path: Path) -> None:
+    path = tmp_path / "airborne_usv.toml"
+    path.write_text(
+        """
+name = "airborne-usv"
+[[vehicles]]
+id = "surface_1"
+preset = "usv"
+position_W_m = [0, 0, 0.24]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="must initially cross"):
+        load_scenario(path)
+
+
+def test_oriented_vehicle_cannot_start_inside_seafloor(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "intersecting.toml"
+    path.write_text(
+        """
+name = "intersecting-seafloor"
+seafloor_z_W_m = -2.0
+[[vehicles]]
+id = "rov_1"
+preset = "rov"
+position_W_m = [0, 0, -1.8]
+rpy_deg = [0, 90, 0]
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="initially intersects the seafloor"):
+        load_scenario(path)
+
+
 def test_sensor_tables_are_strictly_validated(tmp_path: Path) -> None:
     path = tmp_path / "bad_sensor.toml"
     path.write_text(

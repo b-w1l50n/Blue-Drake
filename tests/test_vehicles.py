@@ -56,3 +56,17 @@ def test_non_glider_rejects_glider_dynamics_configuration() -> None:
     }
     with pytest.raises(ValueError, match="require glider vehicle kind"):
         MarineVehicleConfig(**values)
+
+
+def test_dry_inertia_must_be_physically_realizable() -> None:
+    values = vars(rov_preset()) | {
+        "dry_inertia_diagonal_kg_m2": (1.0, 1.0, 3.0)
+    }
+    with pytest.raises(ValueError, match="triangle inequalities"):
+        MarineVehicleConfig(**values)
+
+
+def test_center_of_buoyancy_must_be_inside_body_envelope() -> None:
+    values = vars(rov_preset()) | {"center_of_buoyancy_B_m": (0.0, 0.0, 1.0)}
+    with pytest.raises(ValueError, match="within the body envelope"):
+        MarineVehicleConfig(**values)
