@@ -1,181 +1,87 @@
 # Blue Drake
 
-Blue Drake is a developer-oriented marine robotics simulation toolkit built on
-top of [Drake](https://drake.mit.edu/). It targets surface and subsea vehicles,
-scenario-driven experiments, deterministic headless runs, and Meshcat
-visualization.
+Blue Drake is a free marine robotics simulation toolkit built on
+[Drake](https://drake.mit.edu/). It gives students an affordable place to test
+sensor and vehicle ideas before getting water time, and gives professionals a
+fast way to run an initial plausibility check.
 
-It is intended for students who need an accessible way to exercise sensor and
-vehicle experiments before they can afford water testing, and for professionals
-who want a fast, inexpensive plausibility check before using higher-fidelity
-simulation or field time. Its outputs are simulation evidence, not hardware
-qualification.
+It supports deterministic headless experiments and interactive
+[Meshcat](https://github.com/meshcat-dev/meshcat) visualization for UUVs, ROVs,
+underwater gliders, and USVs.
 
-> **Not affiliated with Drake Sim, we're a student edit meant to expand the sim
-> to marine robotics (both surface and subsea). I'm grateful to the Drake Devs
-> for making such a great sim.**
+Not affiliated with Drake Sim, we're a student edit meant to expand the sim to
+marine robotics (both surface and subsea). I'm grateful to the Drake Devs for
+making such a great sim.
 
-Blue Drake is an independent project and is not affiliated with, endorsed by,
-or maintained by the Drake development team. "Drake" is used here to identify
-the upstream software dependency.
+Blue Drake is independent and is not endorsed or maintained by the Drake team
+or the referenced hardware manufacturers.
 
-## Scope
+## What's included
 
-The intended public vehicle presets are:
+- Marine rigid-body dynamics with distinct air and water environments
+- Generic UUV, ROV, glider, and USV vehicle presets
+- Blue Robotics and Cerulean pressure/sonar profiles
+- Xsens MTi and Avior inertial-sensor profiles
+- A provisional DiveNET Sealink acoustic-modem profile
+- Custom vehicle and sensor composition
+- TOML scenarios, CSV/JSON results, diagnostics, benchmarks, and grid planning
 
-- generic uncrewed underwater vehicles (UUVs),
-- tethered remotely operated vehicles (ROVs),
-- underwater gliders, and
-- uncrewed surface vehicles (USVs).
-
-Blue Drake provides marine dynamics, actuators, hardware-informed sensors,
-acoustic communications, generic control and path-planning primitives, scenario
-files, and Meshcat visualization. It will not contain Erinyes mission autonomy,
-C2 workflows, HIL orchestration, ROS application logic, or learned-model
-services.
-
-Initial hardware-informed targets are Blue Robotics and Cerulean sensors, Xsens
-inertial sensors, and a DiveNET Sealink acoustic modem profile. Product names
-identify simulation targets only; their manufacturers do not sponsor or endorse
-this project.
-
-## Version 1.0 release candidate
-
-The 1.0 release candidate combines experiment tooling and generic geometric
-planning with acoustic, dynamics, actuation, and sensor foundations:
-
-- validated scenario and vehicle configuration types,
-- submerged and surface-piercing hydrostatic modes,
-- distinct air and water densities, steady wind/current inputs, and exposed-box
-  aerodynamic drag,
-- linear and quadratic body-frame drag,
-- buoyancy and center-of-buoyancy restoring torque,
-- fixed thruster and propeller geometry in body coordinates,
-- bounded weighted least-squares wrench allocation with explicit residuals,
-- first-order actuator response and per-actuator diagnostics,
-- commanded-wrench, current, and external-load ports in the Drake fleet,
-- one preset each for UUV, ROV, glider, and USV,
-- a separately sourced Xsens Avior AHRS profile,
-- a provisional DiveNET Sealink profile with published rate, range, channel,
-  and device-count metadata,
-- deterministic acoustic airtime, propagation, range, collision, half-duplex,
-  and transmitter-conflict diagnostics,
-- strict TOML acoustic transmission schedules and CLI event summaries,
-- translucent water-surface and seafloor context in Meshcat,
-- scenario-defined pressure, IMU, and sonar operating envelopes that reuse the
-  existing transparent physical calculations,
-- bounded custom numeric-vector sensors with named channels and units,
-- explicit custom-value, bias, error, ideal, measured, and validity semantics,
-- declared `assumed`, `measured`, `fitted`, or `published` provenance for custom
-  parameters,
-- schema-versioned TOML with lightweight `validate` and `inspect` commands,
-- machine-readable built-in vehicle, sensor, and modem catalogs,
-- deterministic in-memory state and sensor logging with non-overwriting CSV and
-  JSON run artifacts,
-- deterministic optimal axis-connected A* paths over 2D and 3D marine grids,
-- sourced Blue Robotics, Cerulean, and Xsens profiles,
-- mounted pressure/depth, raw IMU, and center-ray sonar outputs,
-- separate ideal, measured, and explicit error ports,
-- diagonal zero-rate effective-inertia handling for configured added mass,
-- low-angle glider lift plus bounded buoyancy and pitch controls,
-- linearized USV roll and pitch hydrostatic stiffness,
-- deterministic unit and diagram tests,
-- a versioned, machine-readable analytical benchmark suite, and
-- wheel, sdist, clean-install, and supported Python/Drake CI release gates.
-
-This is not yet a validated marine digital twin. The preset actuator numbers
-are illustrative, not vendor data. Coupled added-mass dynamics, wave excitation,
-detailed glider mechanisms, tether mechanics, propeller curves, acoustic
-channel physics, vendor protocols, and vendor onboard processing are
-deliberately deferred and listed in
-[the fidelity matrix](docs/fidelity.md).
+Blue Drake `1.0.0rc1` is intentionally a transparent, moderate-fidelity tool.
+It is not a validated digital twin or a substitute for bench, tank, lake, or
+sea testing.
 
 ## Quick start
 
-The supported release path is CPython 3.12-3.14 on Ubuntu 24.04 with Drake
-1.54.0. A frozen Drake 1.45 extra remains available for the original macOS
-Sonoma development host; that platform is no longer supported upstream. See
-[the compatibility policy](docs/compatibility.md).
+The supported release environment is CPython 3.12–3.14 on Ubuntu 24.04 with
+Drake 1.54.
 
 ```bash
+git clone https://github.com/b-w1l50n/Blue-Drake.git
+cd Blue-Drake
 python3 -m venv .venv
-.venv/bin/pip install -e '.[dev,drake-current]'
+.venv/bin/pip install -e '.[drake-current]'
 .venv/bin/blue-drake scenarios/mixed_marine.toml
 ```
 
-The command prints a local Meshcat URL. For a terminal-only deterministic run:
-
-```bash
-.venv/bin/blue-drake scenarios/mixed_marine.toml \
-  --no-visualizer --duration 2
-```
-
-For a five-minute Meshcat session with all four vehicles trimmed in view, use
-the dedicated showcase instead of extending the short dynamic example:
+The last command prints a local Meshcat URL. Run the all-vehicle showcase with:
 
 ```bash
 .venv/bin/blue-drake scenarios/fleet_showcase.toml
 ```
 
-Meshcat listens only on the local machine by default. On a trusted LAN, a NUC
-can expose it deliberately and keep a stable port:
+For a terminal-only run or a quick installation check:
 
 ```bash
-.venv/bin/blue-drake scenarios/fleet_showcase.toml \
-  --meshcat-host '*' --meshcat-port 7000
-```
-
-Then open `http://NUC_IP:7000` from the other computer. Meshcat has no Blue
-Drake authentication layer; do not expose that listener to the public internet.
-
-Validate or inspect a scenario without launching Drake:
-
-```bash
-.venv/bin/blue-drake validate scenarios/mixed_marine.toml
-.venv/bin/blue-drake inspect scenarios/mixed_marine.toml --json
-.venv/bin/blue-drake benchmark --json
+.venv/bin/blue-drake scenarios/mixed_marine.toml \
+  --no-visualizer --realtime-rate 0
 .venv/bin/blue-drake doctor
+.venv/bin/blue-drake benchmark
 ```
 
-See the complete [Ubuntu, WSL2, and NUC guide](docs/getting_started.md) for
-clean installation, SSH-tunneled Meshcat, and a first sensor experiment.
-Developers can follow the tested [custom vehicle guide](docs/custom_vehicles.md)
-to compose an assumed, measured, published, or fitted Python model without
-depending on CLI internals.
+## Documentation
 
-The library API exposes `build_marine_fleet_diagram()` for custom composition,
-plus `build_marine_scenario_diagram()` and `configure_scenario_context()` for
-running parsed scenarios from Python. Drake users can connect their own
-controllers, planners, loggers, and analysis systems without depending on CLI
-internals.
+- [Installation and first experiment](docs/getting_started.md)
+- [What the models do and do not represent](docs/fidelity.md)
+- [Scenario and experiment workflow](docs/experiment_tooling.md)
+- [Sensors](docs/sensors.md), [custom sensors](docs/custom_sensors.md), and
+  [custom vehicles](docs/custom_vehicles.md)
+- [Dynamics](docs/dynamics.md), [actuation](docs/actuation.md), and
+  [acoustics](docs/acoustics.md)
+- [Public Python API](docs/public_api.md) and
+  [compatibility policy](docs/compatibility.md)
+- [1.0 release contract](docs/release_contract.md),
+  [changelog](CHANGELOG.md), and [contributing guide](CONTRIBUTING.md)
 
-## Coordinates and units
+All physical quantities use SI units. World and body frames are right-handed
+with `x` forward, `y` left, and `z` up.
 
-All physical quantities use SI units. World and body frames are right-handed,
-with `x` forward, `y` left, and `z` up. Submerged positions therefore have
-negative world `z`. Spatial wrench vectors use Drake order: torque followed by
-force.
+## Project boundaries
 
-See [architecture](docs/architecture.md), [fidelity](docs/fidelity.md), and
-[actuation](docs/actuation.md) before extending a model. Sensor contributors
-should also read [sensor semantics and provenance](docs/sensors.md),
-[acoustic communication semantics](docs/acoustics.md), and
-[marine dynamics](docs/dynamics.md). The phase boundary and wind model are in
-[the environment contract](docs/environment.md). Custom sensor authors should read
-[custom sensor profiles and supplied values](docs/custom_sensors.md), plus
-[scenario and experiment tooling](docs/experiment_tooling.md),
-[generic grid path planning](docs/planning.md), and
-[analytical validation evidence](docs/validation.md). Release users should also
-read [compatibility and versioning](docs/compatibility.md),
-[the generic reference vehicle cases](docs/reference_cases.md),
-[the 1.0 release contract](docs/release_contract.md),
-[the public API policy](docs/public_api.md),
-[the release procedure](docs/releasing.md),
-[the changelog](CHANGELOG.md), and [contributing](CONTRIBUTING.md).
+Blue Drake does not include mission autonomy, ROS application logic, HIL
+orchestration, C2 workflows, credentials, operational endpoints, proprietary
+vendor protocols, or live hardware control.
 
 ## License
 
-Blue Drake is distributed under the
-[BSD 3-Clause License](LICENSE). This license applies to Blue Drake's original
-code only; Drake and referenced vendor products retain their own licenses,
-copyrights, and trademarks.
+[BSD 3-Clause](LICENSE). Drake and referenced products retain their own
+licenses, copyrights, and trademarks.
