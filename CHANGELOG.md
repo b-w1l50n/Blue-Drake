@@ -18,6 +18,8 @@ and analytical benchmark output.
   runs, and report expected runtime failures without Python tracebacks.
 - Add supported scenario-to-diagram and context-configuration Python APIs so
   library users do not depend on CLI internals.
+- Add a read-only `doctor` command and complete Ubuntu, WSL2, secure NUC, and
+  first sensor-experiment instructions.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface

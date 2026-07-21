@@ -44,6 +44,14 @@ blue-drake catalog
 blue-drake catalog --json
 ```
 
+Inspect the local Python, NumPy, Drake, platform, and Meshcat defaults without
+starting a simulator or importing PyDrake:
+
+```bash
+blue-drake doctor
+blue-drake doctor --json
+```
+
 Run explicitly or use the backward-compatible positional form:
 
 ```bash

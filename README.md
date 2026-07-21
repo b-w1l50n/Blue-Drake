@@ -134,7 +134,11 @@ Validate or inspect a scenario without launching Drake:
 .venv/bin/blue-drake validate scenarios/mixed_marine.toml
 .venv/bin/blue-drake inspect scenarios/mixed_marine.toml --json
 .venv/bin/blue-drake benchmark --json
+.venv/bin/blue-drake doctor
 ```
+
+See the complete [Ubuntu, WSL2, and NUC guide](docs/getting_started.md) for
+clean installation, SSH-tunneled Meshcat, and a first sensor experiment.
 
 The library API exposes `build_marine_fleet_diagram()` for custom composition,
 plus `build_marine_scenario_diagram()` and `configure_scenario_context()` for

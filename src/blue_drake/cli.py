@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import json
 import math
 import os
+import platform
 import sys
 import tempfile
 from collections.abc import Sequence
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +27,7 @@ os.environ.setdefault(
     os.path.join(tempfile.gettempdir(), "blue-drake-matplotlib"),
 )
 
-_COMMANDS = {"run", "validate", "inspect", "catalog", "benchmark"}
+_COMMANDS = {"run", "validate", "inspect", "catalog", "benchmark", "doctor"}
 
 
 def _add_json_option(parser: argparse.ArgumentParser) -> None:
@@ -91,6 +94,10 @@ def _parser() -> argparse.ArgumentParser:
         "benchmark", help="run analytical implementation benchmarks"
     )
     _add_json_option(benchmark)
+    doctor = subparsers.add_parser(
+        "doctor", help="inspect the local Blue Drake runtime"
+    )
+    _add_json_option(doctor)
     return parser
 
 
@@ -180,6 +187,129 @@ def _print_benchmark(report: dict) -> None:
             f"observed={check['observed']:.12g} "
             f"expected={check['expected']:.12g} {check['unit']}"
         )
+
+
+def _installed_version(distribution: str) -> str | None:
+    try:
+        return version(distribution)
+    except PackageNotFoundError:
+        return None
+
+
+def _version_prefix(value: str | None) -> tuple[int, int] | None:
+    if value is None:
+        return None
+    try:
+        parts = value.split("+", maxsplit=1)[0].split(".")
+        return int(parts[0]), int(parts[1])
+    except (IndexError, ValueError):
+        return None
+
+
+def _doctor_report() -> dict[str, object]:
+    """Return read-only runtime diagnostics without importing Drake."""
+
+    python_version = platform.python_version()
+    python_implementation = platform.python_implementation()
+    python_supported = python_implementation == "CPython" and (
+        3,
+        12,
+    ) <= sys.version_info[:2] < (3, 15)
+    numpy_version = _installed_version("numpy") or np.__version__
+    numpy_prefix = _version_prefix(numpy_version)
+    numpy_supported = numpy_prefix is not None and numpy_prefix[0] == 2
+    drake_version = _installed_version("drake")
+    pydrake_available = importlib.util.find_spec("pydrake") is not None
+    simulation_ready = (
+        python_supported and numpy_supported and pydrake_available
+    )
+    system = platform.system()
+    release = platform.release()
+    is_wsl = system == "Linux" and "microsoft" in release.lower()
+    try:
+        os_release = (
+            platform.freedesktop_os_release() if system == "Linux" else {}
+        )
+    except OSError:
+        os_release = {}
+    distribution_id = os_release.get("ID")
+    distribution_version = os_release.get("VERSION_ID")
+    release_supported = (
+        system == "Linux"
+        and distribution_id == "ubuntu"
+        and distribution_version == "24.04"
+        and python_supported
+        and numpy_supported
+        and _version_prefix(drake_version) == (1, 54)
+    )
+    checks = (
+        {
+            "id": "python",
+            "passed": python_supported,
+            "required": True,
+            "detail": (
+                f"{python_implementation} {python_version}; requires CPython "
+                "3.12 through 3.14"
+            ),
+        },
+        {
+            "id": "numpy",
+            "passed": numpy_supported,
+            "required": True,
+            "detail": f"NumPy {numpy_version}; requires major version 2",
+        },
+        {
+            "id": "pydrake",
+            "passed": pydrake_available,
+            "required": True,
+            "detail": (
+                f"Drake distribution {drake_version}"
+                if drake_version is not None
+                else "Drake distribution not found"
+            ),
+        },
+        {
+            "id": "release-platform",
+            "passed": release_supported,
+            "required": False,
+            "detail": (
+                "Ubuntu/Linux with Drake 1.54 is the release CI target; "
+                f"detected {system} {release}"
+            ),
+        },
+    )
+    return {
+        "doctor_schema_version": 1,
+        "blue_drake_version": __version__,
+        "simulation_ready": simulation_ready,
+        "release_supported_environment": release_supported,
+        "platform": {
+            "system": system,
+            "release": release,
+            "machine": platform.machine(),
+            "wsl": is_wsl,
+            "distribution_id": distribution_id,
+            "distribution_version": distribution_version,
+        },
+        "meshcat": {
+            "default_host": "localhost",
+            "default_port": None,
+            "lan_exposure_requires_opt_in": True,
+        },
+        "checks": list(checks),
+    }
+
+
+def _print_doctor(report: dict[str, object]) -> None:
+    ready = "READY" if report["simulation_ready"] else "NOT READY"
+    print(f"Blue Drake doctor: {ready}")
+    print(f"Blue Drake: {report['blue_drake_version']}")
+    for check in report["checks"]:
+        status = "PASS" if check["passed"] else "WARN"
+        if check["required"] and not check["passed"]:
+            status = "FAIL"
+        print(f"  {status} {check['id']}: {check['detail']}")
+    print("  Meshcat default: localhost with an automatically selected port")
 
 
 def _print_initial_configuration(scenario: MarineScenario) -> None:
@@ -314,6 +444,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             else:
                 _print_benchmark(report)
             return 0 if report["passed"] else 1
+        if args.command == "doctor":
+            report = _doctor_report()
+            if args.json:
+                print(json.dumps(report, indent=2, sort_keys=True))
+            else:
+                _print_doctor(report)
+            return 0 if report["simulation_ready"] else 1
         if args.command == "catalog":
             catalog = catalog_summary()
             if args.json:

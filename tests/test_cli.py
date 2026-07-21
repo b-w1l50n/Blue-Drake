@@ -97,6 +97,35 @@ def test_catalog_lists_avior_and_sealink(capsys) -> None:
     assert result["modems"][0]["profile_id"] == "divenet-sealink-3km-oem"
 
 
+def test_doctor_reports_runtime_without_importing_pydrake() -> None:
+    code = (
+        "import json, sys; "
+        "from blue_drake.cli import main; "
+        "status = main(['doctor', '--json']); "
+        "assert status in (0, 1); "
+        "assert not any(n == 'pydrake' or n.startswith('pydrake.') "
+        "for n in sys.modules)"
+    )
+    completed = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    result = json.loads(completed.stdout)
+    assert result["doctor_schema_version"] == 1
+    assert result["blue_drake_version"] == __version__
+    assert result["meshcat"]["default_host"] == "localhost"
+    assert {check["id"] for check in result["checks"]} == {
+        "python",
+        "numpy",
+        "pydrake",
+        "release-platform",
+    }
+
+
 def test_invalid_scenario_returns_nonzero_without_traceback(
     tmp_path: Path, capsys
 ) -> None:
