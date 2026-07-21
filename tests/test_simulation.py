@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -111,6 +113,25 @@ def test_scenario_build_and_context_configuration_are_public() -> None:
         )
     simulator.Initialize()
     simulator.AdvanceTo(0.01)
+
+
+def test_custom_vehicle_example_runs_as_documented() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(
+                Path(__file__).resolve().parents[1]
+                / "examples"
+                / "custom_vehicle.py"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "student_rov xyz_W_m=" in completed.stdout
+    assert "depth_m=" in completed.stdout
 
 
 def test_visualization_receives_explicit_plant_and_scene_graph(

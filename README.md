@@ -139,6 +139,9 @@ Validate or inspect a scenario without launching Drake:
 
 See the complete [Ubuntu, WSL2, and NUC guide](docs/getting_started.md) for
 clean installation, SSH-tunneled Meshcat, and a first sensor experiment.
+Developers can follow the tested [custom vehicle guide](docs/custom_vehicles.md)
+to compose an assumed, measured, published, or fitted Python model without
+depending on CLI internals.
 
 The library API exposes `build_marine_fleet_diagram()` for custom composition,
 plus `build_marine_scenario_diagram()` and `configure_scenario_context()` for

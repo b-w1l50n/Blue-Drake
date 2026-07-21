@@ -22,6 +22,8 @@ and analytical benchmark output.
   first sensor-experiment instructions.
 - Add shared, machine-readable provenance and source URLs to vehicle
   configurations, scenario inspection, and catalogs.
+- Add a tested custom-vehicle and mounted-sensor Python example with explicit
+  consistency, provenance, and validation guidance.
 - Pass the custom-named marine plant and scene graph explicitly to Drake's
   visualization configuration, restoring Meshcat startup on Drake 1.54.
 - Scale buoyancy and water-relative loads through an upright-box free-surface
