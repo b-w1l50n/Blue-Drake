@@ -134,6 +134,33 @@ def test_custom_vehicle_example_runs_as_documented() -> None:
     assert "depth_m=" in completed.stdout
 
 
+def test_station_keeping_example_closes_loop_through_drake_diagram() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(
+                Path(__file__).resolve().parents[1]
+                / "examples"
+                / "station_keeping.py"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    error_line = next(
+        line
+        for line in completed.stdout.splitlines()
+        if line.startswith("position_error_m=")
+    )
+    initial, final = (
+        float(value)
+        for value in error_line.removeprefix("position_error_m=").split(" -> ")
+    )
+    assert final < 0.2 * initial
+
+
 def test_visualization_receives_explicit_plant_and_scene_graph(
     monkeypatch,
 ) -> None:

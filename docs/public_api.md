@@ -22,7 +22,9 @@ The following module entry points are also supported:
   documented pure measurement functions;
 - `blue_drake.acoustics.modem_profile()`, `estimate_transmission()`, and
   `schedule_transmissions()`;
-- `blue_drake.actuators.allocate_wrench()`; and
+- `blue_drake.actuators.allocate_wrench()`;
+- `blue_drake.controls.StationKeepingGains` and
+  `station_keeping_wrench()`; and
 - `blue_drake.inspection.scenario_summary()` and `catalog_summary()`.
 
 Other importable names are implementation details unless another document
@@ -37,6 +39,10 @@ order, frames, and SI units documented in [architecture](architecture.md),
 interfaces. New optional ports may be added; removing, renaming, reordering, or
 changing the meaning of an existing port requires deprecation or a major
 release.
+
+`blue_drake.control_systems.StationKeepingController` is also supported. Its
+estimated-state, desired-pose, and commanded-wrench ports follow the frame,
+order, and unit contract in [marine controls](controls.md).
 
 The systems are double-only in 1.0. AutoDiff and symbolic scalar conversion are
 not implied by the fact that they are Drake systems.

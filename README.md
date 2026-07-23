@@ -24,6 +24,7 @@ or the referenced hardware manufacturers.
 - Xsens MTi and Avior inertial-sensor profiles
 - A provisional DiveNET Sealink acoustic-modem profile
 - Custom vehicle and sensor composition
+- Drake-native station-keeping control and diagram composition
 - TOML scenarios, CSV/JSON results, diagnostics, benchmarks, and grid planning
 
 Blue Drake `1.0.0rc1` is intentionally a transparent, moderate-fidelity tool.
@@ -66,7 +67,7 @@ For a terminal-only run or a quick installation check:
 - [Sensors](docs/sensors.md), [custom sensors](docs/custom_sensors.md), and
   [custom vehicles](docs/custom_vehicles.md)
 - [Dynamics](docs/dynamics.md), [actuation](docs/actuation.md), and
-  [acoustics](docs/acoustics.md)
+  [controls](docs/controls.md), and [acoustics](docs/acoustics.md)
 - [Public Python API](docs/public_api.md) and
   [compatibility policy](docs/compatibility.md)
 - [1.0 release contract](docs/release_contract.md),

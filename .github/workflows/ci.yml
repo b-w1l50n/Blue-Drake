@@ -72,8 +72,10 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e '.[dev,drake-current]'
-      - name: Run supported composition example
-        run: python examples/custom_vehicle.py
+      - name: Run supported composition examples
+        run: |
+          python examples/custom_vehicle.py
+          python examples/station_keeping.py
       - name: Run short mixed and custom-sensor scenarios
         run: |
           blue-drake run scenarios/mixed_marine.toml \

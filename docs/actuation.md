@@ -58,7 +58,8 @@ Actuated presets export these ports using the vehicle ID as a prefix:
 - `<id>_applied_wrench_B`: additive external load that bypasses actuation.
 
 The applied-wrench input is retained for disturbances, tethers, and future
-model composition. It must not be used to claim actuator fidelity.
+model composition. It must not be used to claim actuator fidelity. Low-level
+controllers connect to `wrench_command_B`, never `applied_wrench_B`.
 
 ## Preset capability
 
@@ -82,7 +83,7 @@ citable curves or test data plus validation tests before they can be added.
 - detailed glider pump and movable-mass mechanics,
 - thruster-thruster and thruster-hull interactions,
 - faults, dead zones, hysteresis, and command transport, and
-- closed-loop control or autonomy.
+- task-level control, path execution, or autonomy.
 
 These omissions keep the command layer composable and prevent assumed values
 from being presented as a validated digital twin.

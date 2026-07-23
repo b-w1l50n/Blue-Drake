@@ -5,10 +5,12 @@ foundation built on Drake. Its purpose is to make bounded engineering models
 easy to inspect, compose, test, and replace. It is not intended to reproduce
 CFD, a high-detail commercial simulator, or a validated vehicle digital twin.
 
-This contract is the acceptance boundary for `1.0.0rc1`. A capability does not
-enter the release merely because it can be rendered or demonstrated; it must
-have a documented model, deterministic tests, and evidence appropriate to the
-claim.
+This contract is the acceptance boundary for the 1.0 release line.
+`1.0.0rc1` established the marine foundation; `1.0.1` adds only a generic,
+bounded station-keeping system and a Drake composition example. A capability
+does not enter the release merely because it can be rendered or demonstrated;
+it must have a documented model, deterministic tests, and evidence appropriate
+to the claim.
 
 ## Supported scope
 
@@ -25,6 +27,8 @@ The release supports:
 - a provisional DiveNET Sealink envelope and deterministic, stationary
   acoustic event scheduling;
 - custom physical sensor profiles and bounded caller-supplied vector sensors;
+- generic geometric station keeping connected through the existing actuator
+  command boundary;
 - schema-validated scenarios, deterministic headless execution, non-overwriting
   run artifacts, analytical and reference validation, and Meshcat viewing;
 - deterministic axis-connected grid path planning that is independent of
@@ -52,7 +56,7 @@ bench test, tank test, or field trial.
 
 The release does not contain or claim:
 
-- mission autonomy, path execution, vehicle controllers, or behavior trees;
+- mission autonomy, path execution, task-level controllers, or behavior trees;
 - ROS application logic, HIL orchestration, C2 workflows, operational
   endpoints, credentials, or learned-model services;
 - vendor wire protocols, vendor firmware behavior, or live hardware control;
@@ -61,11 +65,13 @@ The release does not contain or claim:
   digital twin; or
 - safety qualification for a physical vehicle.
 
-These are boundaries, not a backlog that must be completed for 1.0.
+These are boundaries, not a backlog that must be completed for 1.0. Generic
+low-level control laws are in scope only when they remain independent of
+mission state and connect through documented Drake ports.
 
 ## Release gates
 
-`1.0.0rc1` may be stamped only when all of these gates pass:
+A 1.0 release may be stamped only when all of these gates pass:
 
 1. Public Python entry points, Drake diagram ports, CLI behavior, scenario
    schema, artifact schema, benchmark schema, frames, units, and compatibility

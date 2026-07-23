@@ -8,6 +8,7 @@ from blue_drake.actuators import (
     WrenchAllocation,
     allocate_wrench,
 )
+from blue_drake.controls import StationKeepingGains, station_keeping_wrench
 from blue_drake.planning import GridPath, MarineGrid, plan_grid_path
 from blue_drake.provenance import ParameterProvenance
 from blue_drake.sensors import (
@@ -42,6 +43,7 @@ __all__ = [
     "MountedSensorConfig",
     "ParameterProvenance",
     "SensorKind",
+    "StationKeepingGains",
     "VehicleKind",
     "WrenchAllocation",
     "__version__",
@@ -50,6 +52,7 @@ __all__ = [
     "plan_grid_path",
     "rov_preset",
     "sensor_profile",
+    "station_keeping_wrench",
     "usv_preset",
     "uuv_preset",
 ]

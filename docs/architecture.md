@@ -7,12 +7,12 @@ external integrations.
 scenario files
     |
     v
-validated configuration --> wrench allocation --> actuator dynamics
-          |                                         |
-          +--> acoustic event schedule              |
-                                                    |
-                                                    v
-environment inputs --------------------------> marine rigid body
+validated configuration --> controller --> wrench allocation --> actuator dynamics
+          |                                                        |
+          +--> acoustic event schedule                             |
+                                                                   |
+                                                                   v
+environment inputs -----------------------------------------> marine rigid body
                                                     |
                                   +-----------------+----------------+
                                   v                 v                v
@@ -27,6 +27,8 @@ remaining optional.
 
 - `blue_drake.vehicles`: immutable physical configurations and presets.
 - `blue_drake.actuators`: fixed-actuator geometry and bounded allocation.
+- `blue_drake.controls`: pure geometric feedback calculations and gains.
+- `blue_drake.control_systems`: explicit-port Drake controller adapters.
 - `blue_drake.hydrodynamics`: Drake-independent marine wrench calculations.
 - `blue_drake.drake_systems`: small systems that adapt calculations to Drake.
 - `blue_drake.simulation`: fleet diagram construction.
@@ -45,6 +47,11 @@ Actuated vehicle presets export a six-element commanded body-wrench input and
 per-actuator diagnostics. A separate applied body-wrench input remains an
 explicit extension seam for external loads. See [actuation](actuation.md) for
 the allocation equation, port contract, and limitations.
+
+Generic controllers remain separate systems connected through that wrench
+boundary. The controller does not bypass allocation or actuator dynamics. See
+[marine control systems](controls.md) for the station-keeping contract and
+outer-diagram composition pattern.
 
 Sensors consume plant truth through explicit ports and never feed simulation
 state. Each exports ideal and measured values; measured values depend on an

@@ -21,6 +21,7 @@ def test_lightweight_public_api_is_explicit_and_stable() -> None:
         "MountedSensorConfig",
         "ParameterProvenance",
         "SensorKind",
+        "StationKeepingGains",
         "VehicleKind",
         "WrenchAllocation",
         "__version__",
@@ -29,6 +30,7 @@ def test_lightweight_public_api_is_explicit_and_stable() -> None:
         "plan_grid_path",
         "rov_preset",
         "sensor_profile",
+        "station_keeping_wrench",
         "usv_preset",
         "uuv_preset",
     ]
