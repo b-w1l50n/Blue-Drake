@@ -44,8 +44,8 @@ def test_meshcat_rejects_privileged_port(capsys) -> None:
     assert "--meshcat-port" in capsys.readouterr().err
 
 
-def test_package_version_has_release_candidate_value() -> None:
-    assert __version__ == "1.0.0rc1"
+def test_package_version_has_release_value() -> None:
+    assert __version__ == "1.0.1"
 
 
 def test_version_option_reports_single_source_of_truth(capsys) -> None:

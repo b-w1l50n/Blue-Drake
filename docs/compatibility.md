@@ -2,7 +2,7 @@
 
 ## Supported release configuration
 
-Blue Drake 1.0.0rc1 supports CPython 3.12 through 3.14. Its CI release gate runs
+Blue Drake 1.0.1 supports CPython 3.12 through 3.14. Its CI release gate runs
 all three versions on Ubuntu 24.04 with Drake 1.54.0. This matches Drake's
 currently documented Ubuntu 24.04 pip configurations:
 
@@ -37,11 +37,9 @@ and [1.46.0 release notes](https://drake.mit.edu/release_notes/v1.46.0.html).
 
 ## Package and API versions
 
-Blue Drake uses semantic package versions. The 1.0 release-candidate series
-freezes the documented public contract for final 1.0 qualification. Any
-necessary breaking correction between release candidates must be called out in
-the changelog; after final 1.0, breaking public-API changes require a new major
-version and should use a deprecation period when practical.
+Blue Drake uses semantic package versions. The documented 1.x public contract
+is stable. Breaking public-API changes require a new major version and should
+use a deprecation period when practical.
 
 Three data contracts are versioned independently:
 

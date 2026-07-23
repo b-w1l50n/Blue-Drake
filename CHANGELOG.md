@@ -8,6 +8,25 @@ and analytical benchmark output.
 
 No changes yet.
 
+## 1.0.1 - 2026-07-23
+
+First final 1.x release. There was no separate `v1.0.0` final tag;
+`v1.0.0rc1` was the public-contract release candidate.
+
+- Add a bounded geometric station-keeping controller with explicit Drake state,
+  desired-pose, and body-wrench ports.
+- Demonstrate outer `DiagramBuilder` composition through the existing actuator
+  allocation and lag path.
+- Add an optional articulated ROV parallel gripper with a welded palm, two
+  prismatic jaws, joint limits, actuators, collision geometry, and bounded
+  joint-space control.
+- Add executable station-keeping and gripper trajectory examples.
+- Extend the analytical benchmark suite from 11 to 13 checks.
+- Document controller frames, equations, tuning limits, gripper port semantics,
+  assumed parameters, and the manipulation fidelity boundary.
+- Streamline the project README while preserving the project disclaimer and
+  scope boundaries.
+
 ## 1.0.0rc1 - 2026-07-21
 
 First public-contract release candidate. It is aimed at affordable, repeatable

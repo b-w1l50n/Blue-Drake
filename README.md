@@ -27,7 +27,7 @@ or the referenced hardware manufacturers.
 - Drake-native station keeping and an articulated ROV gripper
 - TOML scenarios, CSV/JSON results, diagnostics, benchmarks, and grid planning
 
-Blue Drake `1.0.0rc1` is intentionally a transparent, moderate-fidelity tool.
+Blue Drake `1.0.1` is intentionally a transparent, moderate-fidelity tool.
 It is not a validated digital twin or a substitute for bench, tank, lake, or
 sea testing.
 
