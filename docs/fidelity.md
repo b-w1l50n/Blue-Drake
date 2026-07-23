@@ -22,6 +22,7 @@ a physical model.
 | USV actuation | Generic differential propellers | Rudders, ventilation, curves |
 | USV dynamics | Linear displacement-mode foundation with bounded emergence envelope | Seakeeping, wetted hull form, slamming |
 | Contact | Flat fixed seafloor and primitive vehicle collision geometry | Terrain, hydroelastic tuning |
+| ROV parallel gripper | Welded palm, two prismatic jaws, limits, collision, bounded PD actuation | Link hydrodynamics, compliant pads, transmission, force sensing, calibrated hardware |
 | DiveNET Sealink | Range-, depth-, and phase-bounded provisional deterministic packet schedule | Protocol, channel physics, hardware validation |
 | Bar02 / Bar30 | Hydrostatic pressure and depth | Compensation, drift, wet aging |
 | Xsens MTi-630R | Mounted raw IMU envelope | Proprietary fusion, magnetics, clock |

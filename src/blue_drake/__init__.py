@@ -9,6 +9,10 @@ from blue_drake.actuators import (
     allocate_wrench,
 )
 from blue_drake.controls import StationKeepingGains, station_keeping_wrench
+from blue_drake.manipulation import (
+    ParallelJawGripperConfig,
+    parallel_jaw_actuation,
+)
 from blue_drake.planning import GridPath, MarineGrid, plan_grid_path
 from blue_drake.provenance import ParameterProvenance
 from blue_drake.sensors import (
@@ -42,6 +46,7 @@ __all__ = [
     "MarineGrid",
     "MountedSensorConfig",
     "ParameterProvenance",
+    "ParallelJawGripperConfig",
     "SensorKind",
     "StationKeepingGains",
     "VehicleKind",
@@ -50,6 +55,7 @@ __all__ = [
     "allocate_wrench",
     "glider_preset",
     "plan_grid_path",
+    "parallel_jaw_actuation",
     "rov_preset",
     "sensor_profile",
     "station_keeping_wrench",

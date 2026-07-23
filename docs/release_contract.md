@@ -6,8 +6,8 @@ easy to inspect, compose, test, and replace. It is not intended to reproduce
 CFD, a high-detail commercial simulator, or a validated vehicle digital twin.
 
 This contract is the acceptance boundary for the 1.0 release line.
-`1.0.0rc1` established the marine foundation; `1.0.1` adds only a generic,
-bounded station-keeping system and a Drake composition example. A capability
+`1.0.0rc1` established the marine foundation; `1.0.1` adds a generic, bounded
+station-keeping system plus one articulated parallel-jaw gripper. A capability
 does not enter the release merely because it can be rendered or demonstrated;
 it must have a documented model, deterministic tests, and evidence appropriate
 to the claim.
@@ -29,6 +29,8 @@ The release supports:
 - custom physical sensor profiles and bounded caller-supplied vector sensors;
 - generic geometric station keeping connected through the existing actuator
   command boundary;
+- an optional generic ROV gripper using Drake rigid bodies, prismatic joints,
+  joint actuators, limits, and collision geometry;
 - schema-validated scenarios, deterministic headless execution, non-overwriting
   run artifacts, analytical and reference validation, and Meshcat viewing;
 - deterministic axis-connected grid path planning that is independent of

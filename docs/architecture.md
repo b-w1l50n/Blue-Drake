@@ -29,6 +29,8 @@ remaining optional.
 - `blue_drake.actuators`: fixed-actuator geometry and bounded allocation.
 - `blue_drake.controls`: pure geometric feedback calculations and gains.
 - `blue_drake.control_systems`: explicit-port Drake controller adapters.
+- `blue_drake.manipulation`: generic gripper configuration and joint control.
+- `blue_drake.manipulation_systems`: Drake gripper controller adapter.
 - `blue_drake.hydrodynamics`: Drake-independent marine wrench calculations.
 - `blue_drake.drake_systems`: small systems that adapt calculations to Drake.
 - `blue_drake.simulation`: fleet diagram construction.
@@ -52,6 +54,10 @@ Generic controllers remain separate systems connected through that wrench
 boundary. The controller does not bypass allocation or actuator dynamics. See
 [marine control systems](controls.md) for the station-keeping contract and
 outer-diagram composition pattern.
+
+Optional grippers are real articulated Drake model instances welded to a marine
+base body. Their state and actuation ports remain separate from the base
+vehicle's stable floating-body ports. See [ROV manipulation](manipulation.md).
 
 Sensors consume plant truth through explicit ports and never feed simulation
 state. Each exports ideal and measured values; measured values depend on an

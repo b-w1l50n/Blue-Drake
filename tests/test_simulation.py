@@ -9,6 +9,7 @@ import pytest
 
 from blue_drake.actuators import uuv_actuator_preset
 from blue_drake.drake_systems import GliderControlSystem, MarineActuatorSystem
+from blue_drake.manipulation import ParallelJawGripperConfig
 from blue_drake.scenario import load_scenario
 from blue_drake.sensors import (
     CustomVectorSensorProfile,
@@ -161,6 +162,37 @@ def test_station_keeping_example_closes_loop_through_drake_diagram() -> None:
     assert final < 0.2 * initial
 
 
+def test_rov_gripper_example_uses_articulated_drake_joints() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            str(
+                Path(__file__).resolve().parents[1]
+                / "examples"
+                / "rov_gripper.py"
+            ),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+    opening_line = next(
+        line
+        for line in completed.stdout.splitlines()
+        if line.startswith("gripper_opening_m=")
+    )
+    initial, final = (
+        float(value)
+        for value in opening_line.removeprefix("gripper_opening_m=").split(
+            " -> "
+        )
+    )
+    assert initial == pytest.approx(0.16, abs=1e-4)
+    assert final == pytest.approx(0.04, abs=2e-3)
+    assert "joint_limits_enforced=True" in completed.stdout
+
+
 def test_visualization_receives_explicit_plant_and_scene_graph(
     monkeypatch,
 ) -> None:
@@ -242,6 +274,20 @@ def test_custom_vector_sensor_exports_supplied_value_port() -> None:
     ).Eval(context)
     assert ideal == pytest.approx([34.8, 1.2, 1.0])
     assert measured == pytest.approx([34.9, 1.2, 1.0])
+
+
+def test_parallel_gripper_exports_joint_ports_without_changing_base_state():
+    config = ParallelJawGripperConfig()
+    model = build_marine_fleet_diagram(
+        {"rov_1": rov_preset()}, grippers={"rov_1": config}
+    )
+    assert model.diagram.GetOutputPort("rov_1_state").size() == 13
+    assert model.diagram.GetOutputPort("rov_1_gripper_state").size() == 4
+    assert model.diagram.GetInputPort("rov_1_gripper_actuation_N").size() == 2
+    gripper = model.vehicle("rov_1").gripper
+    assert gripper is not None
+    assert gripper.left_joint.get_default_translation() == pytest.approx(0.08)
+    assert gripper.right_joint.get_default_translation() == pytest.approx(-0.08)
 
 
 def test_periodic_fleet_logs_capture_state_and_sensor_measurements() -> None:
@@ -579,3 +625,8 @@ def test_fleet_environment_parameters_are_validated_at_build_time() -> None:
         )
     with pytest.raises(ValueError, match="below zero"):
         build_marine_fleet_diagram({"rov_1": rov_preset()}, seafloor_z_W_m=2.0)
+    with pytest.raises(ValueError, match="unknown vehicles"):
+        build_marine_fleet_diagram(
+            {"rov_1": rov_preset()},
+            grippers={"missing": ParallelJawGripperConfig()},
+        )

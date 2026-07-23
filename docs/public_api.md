@@ -25,6 +25,8 @@ The following module entry points are also supported:
 - `blue_drake.actuators.allocate_wrench()`;
 - `blue_drake.controls.StationKeepingGains` and
   `station_keeping_wrench()`; and
+- `blue_drake.manipulation.ParallelJawGripperConfig` and
+  `parallel_jaw_actuation()`; and
 - `blue_drake.inspection.scenario_summary()` and `catalog_summary()`.
 
 Other importable names are implementation details unless another document
@@ -43,6 +45,10 @@ release.
 `blue_drake.control_systems.StationKeepingController` is also supported. Its
 estimated-state, desired-pose, and commanded-wrench ports follow the frame,
 order, and unit contract in [marine controls](controls.md).
+
+`blue_drake.manipulation_systems.ParallelJawGripperController` and the optional
+`grippers` argument to `build_marine_fleet_diagram()` are supported. Gripper
+state and actuation ports follow [the manipulation contract](manipulation.md).
 
 The systems are double-only in 1.0. AutoDiff and symbolic scalar conversion are
 not implied by the fact that they are Drake systems.

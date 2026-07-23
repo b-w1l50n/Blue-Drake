@@ -26,6 +26,7 @@ clean commit on the supported Ubuntu 24.04 and Drake 1.54 configuration.
    blue-drake validate scenarios/fleet_showcase.toml
    python examples/custom_vehicle.py
    python examples/station_keeping.py
+   python examples/rov_gripper.py
    ```
 
 4. Build both distributions, validate their metadata, and install the wheel in

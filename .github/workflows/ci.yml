@@ -76,6 +76,7 @@ jobs:
         run: |
           python examples/custom_vehicle.py
           python examples/station_keeping.py
+          python examples/rov_gripper.py
       - name: Run short mixed and custom-sensor scenarios
         run: |
           blue-drake run scenarios/mixed_marine.toml \

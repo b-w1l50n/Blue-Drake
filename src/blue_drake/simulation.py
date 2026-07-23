@@ -15,6 +15,7 @@ from blue_drake.drake_systems import (
     SpatialForceConcatenator,
 )
 from blue_drake.identifiers import validate_identifier
+from blue_drake.manipulation import ParallelJawGripperConfig
 from blue_drake.scenario import MarineScenario
 from blue_drake.sensor_systems import (
     CustomVectorSensorSystem,
@@ -31,7 +32,12 @@ try:
         AddMultibodyPlantSceneGraph,
         CoulombFriction,
     )
-    from pydrake.multibody.tree import SpatialInertia, UnitInertia
+    from pydrake.multibody.tree import (
+        FixedOffsetFrame,
+        PrismaticJoint,
+        SpatialInertia,
+        UnitInertia,
+    )
     from pydrake.systems.framework import DiagramBuilder
     from pydrake.systems.primitives import LogVectorOutput
     from pydrake.visualization import (
@@ -56,6 +62,7 @@ class FleetVehicle:
     glider_controls: GliderControlSystem | None
     sensors: tuple[FleetSensor, ...]
     config: MarineVehicleConfig
+    gripper: FleetGripper | None = None
 
 
 @dataclass(frozen=True)
@@ -64,6 +71,19 @@ class FleetSensor:
 
     config: MountedSensorConfig
     system: object
+
+
+@dataclass(frozen=True)
+class FleetGripper:
+    """Drake handles and configuration for one parallel-jaw gripper."""
+
+    config: ParallelJawGripperConfig
+    model_instance: object
+    palm: object
+    left_jaw: object
+    right_jaw: object
+    left_joint: object
+    right_joint: object
 
 
 @dataclass(frozen=True)
@@ -106,6 +126,151 @@ def _spatial_inertia(config: MarineVehicleConfig) -> SpatialInertia:
         mass=mass,
         p_PScm_E=np.zeros(3),
         G_SP_E=unit_inertia,
+    )
+
+
+def _box_spatial_inertia(
+    mass_kg: float, dimensions_m: tuple[float, float, float]
+) -> SpatialInertia:
+    length, width, height = dimensions_m
+    scale = mass_kg / 12.0
+    inertia = (
+        scale * (width**2 + height**2),
+        scale * (length**2 + height**2),
+        scale * (length**2 + width**2),
+    )
+    return SpatialInertia(
+        mass=mass_kg,
+        p_PScm_E=np.zeros(3),
+        G_SP_E=UnitInertia(
+            Ixx=inertia[0] / mass_kg,
+            Iyy=inertia[1] / mass_kg,
+            Izz=inertia[2] / mass_kg,
+        ),
+    )
+
+
+def _register_gripper_geometry(
+    plant, body, *, name: str, dimensions_m, color
+) -> None:
+    shape = Box(*dimensions_m)
+    plant.RegisterVisualGeometry(
+        body, RigidTransform(), shape, f"{name}_illustration", color
+    )
+    plant.RegisterCollisionGeometry(
+        body,
+        RigidTransform(),
+        shape,
+        f"{name}_collision",
+        CoulombFriction(0.8, 0.6),
+    )
+
+
+def _add_parallel_jaw_gripper(
+    plant,
+    *,
+    vehicle_id: str,
+    parent_body,
+    parent_dimensions_m,
+    config: ParallelJawGripperConfig,
+) -> FleetGripper:
+    model_instance = plant.AddModelInstance(f"{vehicle_id}_gripper")
+    palm = plant.AddRigidBody(
+        "palm",
+        model_instance,
+        _box_spatial_inertia(config.palm_mass_kg, config.palm_dimensions_m),
+    )
+    jaw_inertia = _box_spatial_inertia(
+        config.jaw_mass_kg, config.jaw_dimensions_m
+    )
+    left_jaw = plant.AddRigidBody("left_jaw", model_instance, jaw_inertia)
+    right_jaw = plant.AddRigidBody("right_jaw", model_instance, jaw_inertia)
+    _register_gripper_geometry(
+        plant,
+        palm,
+        name=f"{vehicle_id}_gripper_palm",
+        dimensions_m=config.palm_dimensions_m,
+        color=np.array([0.22, 0.24, 0.28, 1.0]),
+    )
+    for name, jaw in (("left", left_jaw), ("right", right_jaw)):
+        _register_gripper_geometry(
+            plant,
+            jaw,
+            name=f"{vehicle_id}_gripper_{name}_jaw",
+            dimensions_m=config.jaw_dimensions_m,
+            color=np.array([0.85, 0.52, 0.08, 1.0]),
+        )
+    plant.WeldFrames(
+        parent_body.body_frame(),
+        palm.body_frame(),
+        RigidTransform(
+            [
+                0.5 * (parent_dimensions_m[0] + config.palm_dimensions_m[0]),
+                0.0,
+                0.0,
+            ]
+        ),
+    )
+    jaw_mount = plant.AddFrame(
+        FixedOffsetFrame(
+            "jaw_mount",
+            palm,
+            RigidTransform(
+                [
+                    0.5
+                    * (
+                        config.palm_dimensions_m[0] + config.jaw_dimensions_m[0]
+                    ),
+                    0.0,
+                    0.0,
+                ]
+            ),
+        )
+    )
+    half_minimum = 0.5 * config.minimum_opening_m
+    half_maximum = 0.5 * config.maximum_opening_m
+    left_joint = plant.AddJoint(
+        PrismaticJoint(
+            "left_jaw_slide",
+            jaw_mount,
+            left_jaw.body_frame(),
+            [0.0, 1.0, 0.0],
+            half_minimum,
+            half_maximum,
+            config.joint_damping_N_per_mps,
+        )
+    )
+    right_joint = plant.AddJoint(
+        PrismaticJoint(
+            "right_jaw_slide",
+            jaw_mount,
+            right_jaw.body_frame(),
+            [0.0, 1.0, 0.0],
+            -half_maximum,
+            -half_minimum,
+            config.joint_damping_N_per_mps,
+        )
+    )
+    left_joint.set_default_translation(0.5 * config.default_opening_m)
+    right_joint.set_default_translation(-0.5 * config.default_opening_m)
+    plant.AddJointActuator(
+        "left_jaw_motor",
+        left_joint,
+        effort_limit=config.maximum_actuation_force_N,
+    )
+    plant.AddJointActuator(
+        "right_jaw_motor",
+        right_joint,
+        effort_limit=config.maximum_actuation_force_N,
+    )
+    return FleetGripper(
+        config=config,
+        model_instance=model_instance,
+        palm=palm,
+        left_jaw=left_jaw,
+        right_jaw=right_jaw,
+        left_joint=left_joint,
+        right_joint=right_joint,
     )
 
 
@@ -311,6 +476,7 @@ def build_marine_fleet_diagram(
     vehicles: Mapping[str, MarineVehicleConfig],
     *,
     sensors: Mapping[str, tuple[MountedSensorConfig, ...]] | None = None,
+    grippers: Mapping[str, ParallelJawGripperConfig] | None = None,
     time_step_s: float = 0.005,
     water_density_kg_m3: float = 1025.0,
     air_density_kg_m3: float = 1.225,
@@ -357,11 +523,18 @@ def build_marine_fleet_diagram(
     ):
         raise ValueError("logging_period_s must be positive and finite")
     sensors = {} if sensors is None else dict(sensors)
+    grippers = {} if grippers is None else dict(grippers)
     unknown_sensor_vehicles = set(sensors) - set(vehicles)
     if unknown_sensor_vehicles:
         raise ValueError(
             "sensor suites reference unknown vehicles: "
             + ", ".join(sorted(unknown_sensor_vehicles))
+        )
+    unknown_gripper_vehicles = set(grippers) - set(vehicles)
+    if unknown_gripper_vehicles:
+        raise ValueError(
+            "grippers reference unknown vehicles: "
+            + ", ".join(sorted(unknown_gripper_vehicles))
         )
 
     builder = DiagramBuilder()
@@ -374,6 +547,7 @@ def build_marine_fleet_diagram(
 
     bodies = []
     model_instances = []
+    built_grippers = []
     for vehicle_id, config in vehicles.items():
         model_instance = plant.AddModelInstance(vehicle_id)
         body = plant.AddRigidBody(
@@ -384,6 +558,18 @@ def build_marine_fleet_diagram(
         _register_vehicle_geometry(plant, body, config)
         bodies.append(body)
         model_instances.append(model_instance)
+        gripper_config = grippers.get(vehicle_id)
+        built_grippers.append(
+            None
+            if gripper_config is None
+            else _add_parallel_jaw_gripper(
+                plant,
+                vehicle_id=vehicle_id,
+                parent_body=body,
+                parent_dimensions_m=config.dimensions_m,
+                config=gripper_config,
+            )
+        )
     _register_seafloor_collision(
         plant,
         seafloor_z_W_m=seafloor_z_W_m,
@@ -395,8 +581,19 @@ def build_marine_fleet_diagram(
     concatenator.set_name("marine_force_concatenator")
     built_vehicles = []
     fleet_logs = []
-    for index, ((vehicle_id, config), model_instance, body) in enumerate(
-        zip(vehicles.items(), model_instances, bodies, strict=True)
+    for index, (
+        (vehicle_id, config),
+        model_instance,
+        body,
+        gripper,
+    ) in enumerate(
+        zip(
+            vehicles.items(),
+            model_instances,
+            bodies,
+            built_grippers,
+            strict=True,
+        )
     ):
         hydrodynamics = builder.AddSystem(
             MarineHydrodynamicForceSystem(
@@ -484,6 +681,15 @@ def build_marine_fleet_diagram(
             plant.get_state_output_port(model_instance),
             f"{vehicle_id}_state",
         )
+        if gripper is not None:
+            builder.ExportInput(
+                plant.get_actuation_input_port(gripper.model_instance),
+                f"{vehicle_id}_gripper_actuation_N",
+            )
+            builder.ExportOutput(
+                plant.get_state_output_port(gripper.model_instance),
+                f"{vehicle_id}_gripper_state",
+            )
         if logging_period_s is not None:
             state_logger = LogVectorOutput(
                 plant.get_state_output_port(model_instance),
@@ -571,6 +777,7 @@ def build_marine_fleet_diagram(
                 glider_controls=glider_control_system,
                 sensors=tuple(fleet_sensors),
                 config=config,
+                gripper=gripper,
             )
         )
 
