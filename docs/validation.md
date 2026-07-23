@@ -27,6 +27,8 @@ expected value, observed value, units, tolerances, error, and pass status.
 | Acoustic latency | preamble + serialization + ideal propagation |
 | ROV thruster geometry | four symmetric 45-degree forces sum to pure surge |
 | UUV propeller geometry | one axial stern propeller produces pure surge |
+| Station keeping | unsaturated position error times declared proportional gain |
+| Parallel gripper | symmetric opening error produces declared jaw force |
 
 The suite calculates expectations directly from the documented equations, then
 compares them with the public implementation. It does not import Drake, open a

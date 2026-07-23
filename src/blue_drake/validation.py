@@ -17,6 +17,7 @@ from blue_drake.actuators import (
     uuv_actuator_preset,
     wrench_from_thrusts,
 )
+from blue_drake.controls import StationKeepingGains, station_keeping_wrench
 from blue_drake.hydrodynamics import (
     MarineWrench,
     aerodynamic_drag_force_B,
@@ -24,6 +25,10 @@ from blue_drake.hydrodynamics import (
     compute_marine_wrench,
     effective_inertia_wrench,
     glider_wing_force_B,
+)
+from blue_drake.manipulation import (
+    ParallelJawGripperConfig,
+    parallel_jaw_actuation,
 )
 from blue_drake.sensors import (
     ParameterProvenance,
@@ -387,6 +392,65 @@ def _uuv_propulsion_check() -> ValidationCheck:
     )
 
 
+def _station_keeping_check() -> ValidationCheck:
+    gains = StationKeepingGains(
+        position_stiffness_N_per_m=(10.0, 10.0, 10.0),
+        position_damping_N_per_mps=(2.0, 2.0, 2.0),
+        rotation_stiffness_Nm_per_rad=(5.0, 5.0, 5.0),
+        rotation_damping_Nm_per_radps=(1.0, 1.0, 1.0),
+        maximum_force_N=20.0,
+        maximum_torque_Nm=10.0,
+    )
+    state = np.array(
+        [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    )
+    desired_pose = state[:7].copy()
+    desired_pose[4] = 0.5
+    wrench = station_keeping_wrench(
+        gains, state=state, desired_pose=desired_pose
+    )
+    return ValidationCheck(
+        check_id="station-keeping-position-feedback",
+        description="Unsaturated position feedback follows the declared gain.",
+        equation="F_B,x = Kp,x * (p_WD,x - p_WB,x)",
+        expected=5.0,
+        observed=float(wrench[3]),
+        unit="N",
+        subject_id="station-keeping-controller",
+    )
+
+
+def _parallel_gripper_check() -> ValidationCheck:
+    config = ParallelJawGripperConfig()
+    state = np.array(
+        [
+            0.5 * config.default_opening_m,
+            -0.5 * config.default_opening_m,
+            0.0,
+            0.0,
+        ]
+    )
+    actuation = parallel_jaw_actuation(
+        config,
+        state=state,
+        desired_opening_m=config.minimum_opening_m,
+    )
+    expected = (
+        0.5
+        * config.position_gain_N_per_m
+        * (config.minimum_opening_m - config.default_opening_m)
+    )
+    return ValidationCheck(
+        check_id="parallel-gripper-symmetric-feedback",
+        description="A closing command creates the declared left-jaw force.",
+        equation="f_left = Kp * (opening_desired - opening) / 2",
+        expected=expected,
+        observed=float(actuation[0]),
+        unit="N",
+        subject_id="parallel-jaw-gripper",
+    )
+
+
 def run_validation_suite() -> ValidationReport:
     """Evaluate Drake-independent analytical implementation benchmarks.
 
@@ -408,5 +472,7 @@ def run_validation_suite() -> ValidationReport:
             _acoustic_timing_check(),
             _actuator_geometry_check(),
             _uuv_propulsion_check(),
+            _station_keeping_check(),
+            _parallel_gripper_check(),
         ),
     )
